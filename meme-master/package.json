@@ -10,7 +10,7 @@
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
 		"format": "prettier --write .",
 		"lint": "prettier --check . && eslint .",
-		"sync-mobile": "npm run build && ./postbuild.sh && mv ./build/prerendered/* ./build/client/ && npx cap sync"
+		"sync-mobile": "npm run build && ./postbuild.sh && mv ./build/prerendered/* ./build/client/ && npx cap sync && npx cap run ios && npx cap run android"
 	},
 	"devDependencies": {
 		"@capacitor/cli": "^6.2.0",
