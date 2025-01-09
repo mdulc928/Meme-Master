@@ -10,10 +10,15 @@
 	}: HTMLInputAttributes & { containerClass?: string } = $props();
 </script>
 
-<div class={twMerge('flex w-full rounded focus-within:ring', clsx(containerClass))}>
+<div
+	class={twMerge(
+		'flex items-center justify-center overflow-hidden rounded focus-within:ring',
+		clsx(containerClass)
+	)}
+>
 	<input
 		{...props}
 		bind:value
-		class={twMerge('grow border-none outline-none ring-0', clsx(props?.class))}
+		class={twMerge('flex grow border-none bg-transparent outline-none ring-0', clsx(props?.class))}
 	/>
 </div>

@@ -16,20 +16,29 @@ export async function POST({ request, params }) {
 	}
 	const userId = userDoc.id;
 	const body = await request.json();
-	switch (action) {
-		case 'create': {
-			const { nickname } = body;
-			return json(await createNewGame({ userId, nickname }));
+	try {
+		switch (action) {
+			case 'create': {
+				const { nickname } = body;
+				return json(await createNewGame({ userId, nickname }));
+			}
+			case 'join': {
+				const { gameCode, nickname } = body;
+				return json(await joinGame({ userId, gameCode, nickname }));
+			}
+			case 'start': {
+				const { gameId } = body;
+				return json(await startGame({ userId, gameId }));
+			}
+			default:
+				return error(404, 'Not found');
 		}
-		case 'join': {
-			const { gameCode, nickname } = body;
-			return json(await joinGame({ userId, gameCode, nickname }));
+	} catch (e) {
+		if (e instanceof Error) {
+			return error(500, e.message);
+		} else {
+			console.error(e);
 		}
-		case 'start': {
-			const { gameId } = body;
-			return json(await startGame({ userId, gameId }));
-		}
-		default:
-			return error(404, 'Not found');
+		error(500, 'Sorry, there was an error processing your request.');
 	}
 }

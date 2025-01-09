@@ -1,4 +1,7 @@
-import { db, app, storage } from '$lib/server/firebase'; // Firestore instance
+import type { Participant } from '$lib/components/Participant/Participant.svelte.js';
+import type { Game } from '$lib/Game.svelte.js';
+import { db } from '$lib/server/firebase'; // Firestore instance
+import { GAME_COLLECTION } from '$lib/utils/collections';
 
 type Image = {
 	uid: string;
@@ -37,15 +40,6 @@ type ParticipantCard = {
 	status?: 'active' | 'discarded';
 };
 
-type Participant = {
-	user: string; // User ID
-	points: number;
-	joinedAt: Date;
-	role: 'judge' | 'player';
-	cardsWon: string[];
-	nickname: string;
-};
-
 type CardStack =
 	| {
 			captions: Caption[];
@@ -59,21 +53,6 @@ type CardStack =
 			imageIndex: number;
 	  };
 
-type Game = {
-	uid: string;
-	code: string; // max 4 characters
-	createdBy: string; // User ID
-	createdAt: Date;
-	startedAt?: Date;
-	endedAt?: Date;
-	statusStartedAt: Date;
-	pausedLengths?: number[];
-	round: number;
-	status: 'waiting' | 'deciding' | 'voting' | 'paused' | 'ended';
-	participants: Participant[];
-};
-
-const GAME_COLLECTION = 'games';
 const CAPTION_COLLECTION = 'captions';
 const IMAGE_COLLECTION = 'images';
 const SUBMISSION_COLLECTION = 'submissions';
@@ -157,7 +136,11 @@ export async function joinGame({
 	gameCode: string;
 }) {
 	// Find the game by code
-	const gameQuery = db.collection(GAME_COLLECTION).where('code', '==', gameCode).limit(1); // we will need to account for the limit of 4 characters, but we won't worry about it for nwo.
+	const gameQuery = db
+		.collection(GAME_COLLECTION)
+		.where('code', '==', gameCode)
+		.where('status', '==', 'waiting')
+		.limit(1); // we will need to account for the limit of 4 characters, but we won't worry about it for nwo.
 	const gameSnapshot = await gameQuery.get();
 
 	if (gameSnapshot.empty) {
@@ -172,7 +155,7 @@ export async function joinGame({
 		(participant: Participant) => participant.user === userId
 	);
 	if (isParticipant) {
-		throw new Error('User is already a participant in this game.');
+		return { gameId: gameDoc.id };
 	}
 
 	// Add the user as a participant

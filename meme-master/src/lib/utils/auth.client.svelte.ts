@@ -13,6 +13,10 @@ export function getUser() {
 	return user;
 }
 
+export function setUser(newUser: User | undefined) {
+	user = newUser;
+}
+
 export async function getAuthHeader(user: User | undefined) {
 	if (user === undefined) return undefined;
 	const token = await getIdToken(user);

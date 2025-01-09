@@ -3,4 +3,6 @@
 	let { children } = $props();
 </script>
 
-{@render children()}
+<div class="flex min-h-lvh flex-col text-[16pt] leading-relaxed">
+	{@render children()}
+</div>
