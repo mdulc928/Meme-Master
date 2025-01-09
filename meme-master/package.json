@@ -3,14 +3,19 @@
 	"version": "0.0.1",
 	"type": "module",
 	"scripts": {
-		"dev": "vite dev",
-		"build": "vite build",
-		"preview": "vite preview",
+		"setCredentials": "export GOOGLE_APPLICATION_CREDENTIALS=\"/Users/melchisedekdulcio/builds/credentials/meme-master-374c3-67661ee19b9b.json\"",
+		"dev": "npm run setCredentials && vite dev",
+		"build": "npm run setCredentials && vite build",
+		"preview": "npm run setCredentials && vite preview",
 		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
 		"format": "prettier --write .",
 		"lint": "prettier --check . && eslint .",
 		"sync-mobile": "npm run build && ./postbuild.sh && mv ./build/prerendered/* ./build/client/ && npx cap sync && npx cap run ios && npx cap run android"
+	},
+	"main": "firebase_functions.js",
+	"engines": {
+		"node": "20"
 	},
 	"devDependencies": {
 		"@capacitor/cli": "^6.2.0",
@@ -37,10 +42,16 @@
 		"@capacitor/android": "^6.2.0",
 		"@capacitor/core": "^6.2.0",
 		"@capacitor/ios": "^6.2.0",
+		"@firebase/analytics": "^0.10.10",
+		"@firebase/app": "^0.10.17",
+		"@firebase/auth": "^1.8.1",
+		"@firebase/firestore": "^4.7.5",
 		"@tailwindcss/container-queries": "^0.1.1",
 		"@tailwindcss/forms": "^0.5.9",
 		"@tailwindcss/typography": "^0.5.15",
 		"clsx": "^2.1.1",
-		"firebase-admin": "^13.0.2"
+		"firebase-admin": "^13.0.2",
+		"firebase-functions": "^6.0.1",
+		"tailwind-merge": "^2.6.0"
 	}
 }

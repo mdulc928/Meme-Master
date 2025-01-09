@@ -14,9 +14,9 @@ const config = {
 		adapter: adapter({
 			out: 'build'
 		}),
-		files: {
+		/* files: {
 			appTemplate: 'src/index.html'
-		},
+		}, */
 		csrf: {
 			checkOrigin: false,
 		}
