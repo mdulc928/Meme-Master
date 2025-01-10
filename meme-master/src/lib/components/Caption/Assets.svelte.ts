@@ -9,6 +9,7 @@ import {
 	writeBatch
 } from '@firebase/firestore';
 import { getDownloadURL, uploadBytes, ref } from '@firebase/storage';
+import Papa from 'papaparse';
 
 export type MemeImage = {
 	uid: string;
@@ -57,6 +58,8 @@ export async function handleCaptionUpload({ captionFiles }: { captionFiles: File
 }
 
 // Function to parse CSV file into Caption objects
+
+// Function to parse CSV file into Caption objects using PapaParse
 export async function parseCsv({
 	file,
 	batch
@@ -64,49 +67,76 @@ export async function parseCsv({
 	file: File;
 	batch: WriteBatch;
 }): Promise<MemeCaption[]> {
-	const text = await file.text();
-	const rows = text.split('\n').filter((row) => row.trim() !== ''); // Remove empty rows
-	const headers = rows[0].split(',').map((header) => header.trim());
+	return new Promise((resolve, reject) => {
+		Papa.parse<{ text: string; categories: string }>(file, {
+			header: true,
+			skipEmptyLines: true,
+			dynamicTyping: false,
+			complete: (results) => {
+				const { data, errors, meta } = results;
 
-	if (!headers.includes('text') || !headers.includes('categories')) {
-		throw new Error('Invalid CSV format: Missing required headers (text, categories)');
-	}
+				// Handle parsing errors
+				if (errors.length > 0) {
+					console.error('CSV Parsing Errors:', errors);
+					return reject(new Error('Error parsing CSV file.'));
+				}
 
-	const captions: MemeCaption[] = [];
-	const textIndex = headers.indexOf('text');
-	const categoryIndex = headers.indexOf('categories');
+				// Validate required headers
+				const headers = meta.fields || [];
+				if (!headers.includes('text') || !headers.includes('categories')) {
+					return reject(
+						new Error('Invalid CSV format: Missing required headers (text, categories)')
+					);
+				}
 
-	if (db === undefined) {
-		// the reason why we need to check here again is because the db
-		// might be undefined by the time the function is called
-		// not sure this will ever happen but it's better to be safe
-		return [];
-	}
+				const captions: MemeCaption[] = [];
 
-	for (let i = 1; i < rows.length; i++) {
-		const values =
-			rows[i].match(/("[^"]*"|[^,]+)/g)?.map((value) => value.replace(/^"|"$/g, '').trim()) || [];
+				// Ensure 'db' is defined
+				if (db === undefined) {
+					console.warn('Database is undefined. No captions will be parsed.');
+					return resolve([]);
+				}
 
-		if (values.length !== headers.length) {
-			console.warn(`Skipping row ${i} due to mismatched column count.`);
-			continue;
-		}
+				data.forEach((row, index) => {
+					const text = row.text?.trim();
+					const categoriesField = row.categories;
 
-		const caption = {
-			uid: '',
-			text: values[textIndex], // todo we may need to ensure duplication is not possible here too in the future
-			owner: 'admin',
-			categories: values[categoryIndex].split(',').map((category) => category.trim()),
-			createdAt: new Date()
-		};
-		const docRef = doc(collection(db, 'captions')); // Automatically generates a unique ID
-		caption.uid = docRef.id; // Assign the generated ID to the caption object
-		console.log(`Adding caption: ${JSON.stringify(caption)}`);
-		batch.set(docRef, caption);
-		captions.push(caption);
-	}
+					if (!text || !categoriesField) {
+						console.warn(`Skipping row ${index + 2} due to missing 'text' or 'categories'.`);
+						return;
+					}
 
-	return captions;
+					const categories = categoriesField
+						.split(',')
+						.map((cat: string) => cat.trim())
+						.filter(Boolean);
+
+					const caption: MemeCaption = {
+						uid: '',
+						text,
+						owner: 'admin',
+						categories,
+						createdAt: new Date()
+					};
+					if (db === undefined) {
+						console.warn('Database is undefined. No captions will be parsed.');
+						return resolve([]);
+					}
+					const docRef = doc(collection(db, 'captions')); // Automatically generates a unique ID
+					caption.uid = docRef.id; // Assign the generated ID to the caption object
+					console.log(`Adding caption: ${JSON.stringify(caption)}`);
+					batch.set(docRef, caption);
+					captions.push(caption);
+				});
+
+				resolve(captions);
+			},
+			error: (error) => {
+				console.error('PapaParse Error:', error);
+				reject(error);
+			}
+		});
+	});
 }
 
 // Function to handle image file upload

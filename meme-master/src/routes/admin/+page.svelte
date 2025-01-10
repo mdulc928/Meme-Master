@@ -15,9 +15,6 @@
 	let imageFiles: FileList | undefined = $state();
 	let attributions: Map<string, { source: string; display: string }> = $state(new Map());
 	let imagesUploaded: Map<string, MemeImage> | undefined = $state();
-	$effect(() => {
-		console.log('attrbutes', attributions);
-	});
 
 	let user = $derived(getUser());
 	onMount(() => {
@@ -45,7 +42,6 @@
 					}
 					attribution.display = value;
 					attributions.set(image.name, attribution);
-					console.log('setting on change');
 				}}
 			/>
 		</div>
