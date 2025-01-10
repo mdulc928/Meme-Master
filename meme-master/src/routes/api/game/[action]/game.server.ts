@@ -4,6 +4,7 @@ import type { Participant } from '$lib/components/Participant/Participant.svelte
 import type { Game, Submission } from '$lib/Game.svelte.js';
 import { db } from '$lib/server/firebase'; // Firestore instance
 import { GAME_COLLECTION, SUBMISSION_COLLECTION } from '$lib/utils/collections';
+import { getGame } from '../../../game/game.client.svelte';
 
 type User = {
 	uid: string;
@@ -570,13 +571,17 @@ submit a vote
     - return sucess
 */
 
-export async function submitVote(
-	authToken: { userId: string },
-	gameId: string,
-	captionId: string,
-	points: number
-) {
-	const { userId } = authToken;
+export async function submitVote({
+	userId,
+	gameId,
+	captionId,
+	points
+}: {
+	userId: string;
+	gameId: string;
+	captionId: string;
+	points: number;
+}) {
 	// Fetch the game
 	const gameRef = db.collection(GAME_COLLECTION).doc(gameId);
 	const gameSnapshot = await gameRef.get();
@@ -585,7 +590,7 @@ export async function submitVote(
 		throw new Error('Game not found.');
 	}
 
-	const gameData = gameSnapshot.data();
+	const gameData = gameSnapshot.data() as Game;
 
 	// Check if the game is in voting state
 	if (gameData.status !== 'voting') {
@@ -593,73 +598,101 @@ export async function submitVote(
 	}
 
 	// Check if the user is a participant
-	const participant = gameData.participants.find((p: any) => p.user === userId);
+	const participantIndex = gameData.participants.findIndex((p: Participant) => p.user === userId);
+	const participant = gameData.participants[participantIndex];
 	if (!participant) {
 		throw new Error('User is not a participant in this game.');
 	}
+
+	const judge = gameData.participants.find((p: Participant) => p.role === 'judge');
 
 	// Check voting eligibility and points
 	const maxPoints =
 		participant.role === 'judge'
 			? 1000 * gameData.participants.length
-			: Math.min(3000, 3000 * gameData.participants.length);
+			: Math.min(3000, 500 * (gameData.participants.length - 1));
 
 	if (points % 100 !== 0 || points > maxPoints || points <= 0) {
 		throw new Error('Invalid points allocation.');
 	}
 
-	const hasVoted = gameData.votes?.some(
-		(vote: any) => vote.userId === userId && vote.captionId === captionId
-	);
-	if (hasVoted) {
-		throw new Error('User has already voted for this caption.');
+	const submissionCollectionRef = gameRef.collection(SUBMISSION_COLLECTION);
+	const submissionQuery = submissionCollectionRef.where('round', '==', gameData.round);
+	const submissionSnapshot = await submissionQuery.get();
+	if (submissionSnapshot.empty) {
+		throw new Error('No submissions found.');
 	}
 
-	// Add the vote to the game's vote collection
-	const voteData = {
-		userId,
-		captionId,
-		points,
-		votedAt: new Date()
-	};
+	const allSubmissions = submissionSnapshot.docs.map((doc) => doc.data() as Submission);
 
-	await gameRef.update({
-		votes: FieldValue.arrayUnion(voteData)
-	});
+	const judgeHasVoted = allSubmissions.some((s) => s.points.some((p) => p.user === judge?.user));
+	if (judgeHasVoted && participant.role === 'judge') {
+		throw new Error('Judge has already voted for this round.');
+	}
 
-	// Update caption's points
-	const submissionRef = db.collection(SUBMISSION_COLLECTION).doc(captionId);
-	await submissionRef.update({
-		points: db.FieldValue.increment(points),
-		voters: db.FieldValue.arrayUnion({ userId, points })
-	});
+	const cardStack = await getCardStack(gameId, 'captions');
+	if (cardStack.type !== 'caption') {
+		throw new Error('Invalid card stack type.');
+	}
+	const activeCards = cardStack.cards.slice(0, cardStack.cardsIndex);
 
-	// Check if all participants have voted
-	const allParticipants = gameData.participants.length;
-	const totalVotes = (gameData.votes || []).length + 1; // Include the current vote
-	const allVoted = totalVotes >= allParticipants;
+	const allUsersCards = activeCards.filter((card) => card?.userId === userId);
 
-	if (allVoted) {
-		// Determine if the game ends or continues
-		const winner = gameData.participants.find((p: any) => p.cardsWon.length >= 8);
-		// we will need to account for pause time too in the future, but let's not worry about it for now.
-		const isGameOver = !!winner || new Date() >= gameData.expirationTime;
+	if (allUsersCards.some((card) => card.captionId === captionId)) {
+		throw new Error('User cannot vote for their own caption.');
+	}
 
-		const nextStatus = isGameOver ? 'ended' : 'deciding';
-		const updateData = {
-			status: nextStatus
-		};
+	const votedCaption = allSubmissions.find((s) => s.caption === captionId);
+	if (!votedCaption) {
+		throw new Error('Caption not found in submissions.');
+	}
 
-		if (!isGameOver) {
-			updateData['round'] = gameData.round + 1;
+	votedCaption.points.push({ user: userId, amount: points, awardedAt: new Date() });
+	await submissionCollectionRef.doc(votedCaption.uid).set(votedCaption);
+
+	const pointTotal = votedCaption.points.reduce((acc, p) => acc + p.amount, 0);
+	const cardOwner = activeCards.find((card) => card.captionId === captionId)?.userId;
+	const cardOwnerParticipantIndex = gameData.participants.findIndex((p) => p.user === cardOwner);
+	const cardOwnerParticipant = gameData.participants[cardOwnerParticipantIndex];
+	if (cardOwnerParticipant) {
+		cardOwnerParticipant.points = pointTotal;
+		gameData.participants[cardOwnerParticipantIndex] = cardOwnerParticipant;
+	}
+
+	if (participant.role === 'judge') {
+		participant.role = 'player';
+		gameData.participants[participantIndex] = participant;
+		gameData.round += 1;
+		gameData.status = 'deciding';
+		gameData.statusStartedAt = new Date();
+
+		const pointsPerParticiant: [string, number][] = [];
+		allSubmissions.forEach((s) => {
+			let totalPoints = 0;
+			s.points.forEach((p) => {
+				totalPoints += p.amount;
+			});
+			const cardOwner = activeCards.find((card) => card.captionId === s.caption)?.userId;
+			if (cardOwner) {
+				pointsPerParticiant.push([cardOwner, totalPoints]);
+			}
+		});
+
+		pointsPerParticiant.sort((a, b) => b[1] - a[1]);
+		const winner = pointsPerParticiant[0];
+		const winnerParticipantIndex = gameData.participants.findIndex((p) => p.user === winner[0]);
+		const winnerParticipant = gameData.participants[winnerParticipantIndex];
+		if (winnerParticipant) {
+			winnerParticipant.cardsWon.push(captionId);
+			gameData.participants[winnerParticipantIndex] = winnerParticipant;
 		}
-
-		await gameRef.update(updateData);
-
-		if (isGameOver) {
-			return { success: true, message: `Game Over. Winner: ${winner?.nickname || 'None'}` };
+		if (winnerParticipant.cardsWon.length >= 8) {
+			gameData.status = 'ended';
+			gameData.endedAt = new Date();
 		}
 	}
+
+	await gameRef.update(gameData);
 
 	return { success: true };
 }

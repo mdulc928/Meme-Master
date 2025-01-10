@@ -6,7 +6,8 @@ import {
 	getUserCardStack,
 	joinGame,
 	startGame,
-	submitCaption
+	submitCaption,
+	submitVote
 } from './game.server';
 import { saveUser } from '../../user.server';
 
@@ -48,6 +49,10 @@ export async function POST({ request, params }) {
 			case 'submitCaption': {
 				const { gameId, captionId } = body;
 				return json(await submitCaption({ userId, gameId, captionId }));
+			}
+			case 'submitVote': {
+				const { gameId, captionId, points } = body;
+				return json(await submitVote({ userId, gameId, captionId, points }));
 			}
 			default:
 				return error(404, 'Not found');

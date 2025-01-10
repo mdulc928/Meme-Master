@@ -11,13 +11,9 @@
 		setUserCards,
 		submitCaption
 	} from '../game.client.svelte';
-	import {
-		createSubmissionsListener,
-		getSubmissions,
-		setSubmissions
-	} from '../submissions.client.svelte';
+	import { createSubmissionsListener, getSubmissions } from '../submissions.client.svelte';
 
-	let { user, currentIndex }: { user: User; currentIndex: number } = $props();
+	let { user, currentIndex = $bindable() }: { user: User; currentIndex: number } = $props();
 	let game = $derived(getGame());
 	let image = $derived(getRoundImage());
 	let round = $derived(game?.round);
@@ -63,9 +59,27 @@
 	{#if !isJudge}
 		<div class="flex">
 			<div class="flex flex-row">
-				<Button><i class="fas fa-angle-left"></i></Button>
+				<Button
+					onclick={() => {
+						if (cards) {
+							const length = cards.length;
+							if (currentIndex === 0) {
+								currentIndex = length - 1;
+							} else {
+								currentIndex -= 1;
+							}
+						}
+					}}><i class="fas fa-angle-left"></i></Button
+				>
 				<span>{cards?.at(currentIndex)?.text}</span>
-				<Button><i class="fas fa-angle-left"></i></Button>
+				<Button
+					onclick={() => {
+						if (cards) {
+							const length = cards.length;
+							currentIndex = (currentIndex + 1) % length;
+						}
+					}}><i class="fas fa-angle-left"></i></Button
+				>
 			</div>
 			<div>
 				<Button

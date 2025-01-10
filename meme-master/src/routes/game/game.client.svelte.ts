@@ -101,3 +101,20 @@ export async function submitCaption({ gameId, captionId, user }: { gameId: strin
 	// todo add zod validation
 	return data;
 }
+
+export async function submitVote({gameId, captionId, points, user}: {gameId: string; captionId: string; points: number; user: User}) {
+	const response = await fetchWithAuth(user, `/api/game/submitVote`, {
+		method: 'POST',
+		headers: {
+			'Content-Type': 'application/json'
+		},
+		body: JSON.stringify({ gameId, captionId, points })
+	});
+
+	if (!response.ok) {
+		throw new Error('Failed to submit vote');
+	}
+	const data = await response.json();
+	// todo add zod validation
+	return data;
+}

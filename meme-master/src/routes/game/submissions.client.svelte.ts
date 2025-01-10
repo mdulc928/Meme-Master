@@ -1,4 +1,4 @@
-import type { Game, Submission } from '$lib/Game.svelte';
+import type { Submission } from '$lib/Game.svelte';
 import { GAME_COLLECTION, SUBMISSION_COLLECTION } from '$lib/utils/collections';
 import { db } from '$lib/utils/firebase.client';
 import { query, collection, where, onSnapshot } from '@firebase/firestore';
@@ -7,6 +7,7 @@ let submissions: Submission[] | undefined = $state();
 export function getSubmissions() {
 	return submissions;
 }
+
 export function setSubmissions(updates: Submission[] | undefined) {
 	submissions = updates;
 }

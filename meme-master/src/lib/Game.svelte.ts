@@ -23,5 +23,6 @@ export type Submission = {
 	points: {
 		amount: number;
 		user: string; // the user id
+		awardedAt: Date;
 	}[];
 };
