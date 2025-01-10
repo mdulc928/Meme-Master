@@ -14,12 +14,12 @@ export function setGame(updates: Game) {
 	game = updates;
 }
 
-let cards: MemeCaption[] | undefined = $state();
-export function getCards() {
-	return cards;
+let userCards: MemeCaption[] | undefined = $state();
+export function getUserCards() {
+	return userCards;
 }
-export function setCards(updates: MemeCaption[]) {
-	cards = updates;
+export function setUserCards(updates: MemeCaption[]) {
+	userCards = updates;
 }
 
 let roundImage: MemeImage | undefined = $state();
