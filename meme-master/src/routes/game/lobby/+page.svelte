@@ -1,42 +1,39 @@
 <script lang="ts">
 	import type { Game } from '$lib/Game.svelte.js';
-	import { getUser, setUser, signIn } from '$lib/utils/auth.client.svelte';
+	import { fetchWithAuth, getUser, signIn } from '$lib/utils/auth.client.svelte';
 	import { auth } from '$lib/utils/firebase.client';
-	import { onMount } from 'svelte';
-	import { createGameStateListener } from './game.client.svelte';
+	import { getGame } from '../game.client.svelte';
 	import Button from '../../Button.svelte';
 	import Participant from '$lib/components/Participant/Participant.svelte';
-	import { browser } from '$app/environment';
 
-	const urlSearchParams = browser ? new URLSearchParams(location.search) : undefined;
-	let gameCode = $state(urlSearchParams?.get('gameCode') ?? undefined);
-	let gameId = $state(urlSearchParams?.get('gameId') ?? undefined);
+	import { goto } from '$app/navigation';
 
 	let user = $derived(getUser());
-	let game: Game | undefined = $state();
-	onMount(() => {
-		if (user === undefined && auth) {
-			signIn(auth);
-		}
-	});
+	let game: Game | undefined = $derived(getGame());
+	let gameId = $derived(game?.uid);
+	let gameCode = $derived(game?.code);
 
-	$effect(() => {
-		if (!gameId) {
-			return;
+	async function startGame() {
+		let authedUser = user;
+		if (!authedUser && auth) {
+			authedUser = await signIn(auth);
 		}
 
-		const unsubscribe = createGameStateListener({
-			gameId,
-			callback(updatedGame) {
-				console.log('got an update to the game');
-				game = updatedGame;
-			}
+		if (!gameId || !((gameId?.length ?? 0) > 0)) {
+			throw new Error('Game id not set.');
+		}
+
+		const response = await fetchWithAuth(authedUser, '/api/game/start', {
+			method: 'POST',
+			body: JSON.stringify({
+				gameId
+			})
 		});
 
-		return unsubscribe;
-	});
-
-	async function startGame() {}
+		if (response.ok) {
+			goto(`/game/play?gameId=${gameId}&gameCode=${gameCode}`);
+		}
+	}
 </script>
 
 <div class="flex h-full w-full grow flex-col">
@@ -49,6 +46,10 @@
 		{/if}
 	</div>
 	<div class="flex self-end">
-		<Button>Start Game</Button>
+		<Button
+			onclick={() => {
+				startGame();
+			}}>Start Game</Button
+		>
 	</div>
 </div>

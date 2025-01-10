@@ -30,15 +30,15 @@ type ParticipantCard = {
 
 type CardStack =
 	| {
-			captions: MemeCaption[];
-			captionIndex: number;
-			locked: string;
+			cards: ParticipantCard[];
+			cardsIndex: number;
+			locked?: string;
 			type: 'caption';
 	  }
 	| {
-			images: MemeImage[];
+			cards: string[];
 			type: 'image';
-			imageIndex: number;
+			cardsIndex: number;
 	  };
 
 const CAPTION_COLLECTION = 'captions';
@@ -124,11 +124,7 @@ export async function joinGame({
 	gameCode: string;
 }) {
 	// Find the game by code
-	const gameQuery = db
-		.collection(GAME_COLLECTION)
-		.where('code', '==', gameCode)
-		.where('status', '==', 'waiting')
-		.limit(1); // we will need to account for the limit of 4 characters, but we won't worry about it for nwo.
+	const gameQuery = db.collection(GAME_COLLECTION).where('code', '==', gameCode).limit(1); // we will need to account for the limit of 4 characters, but we won't worry about it for nwo.
 	const gameSnapshot = await gameQuery.get();
 
 	if (gameSnapshot.empty) {
@@ -137,6 +133,10 @@ export async function joinGame({
 
 	const gameDoc = gameSnapshot.docs[0];
 	const gameData = gameDoc.data();
+
+	if (gameData.status !== 'waiting') {
+		return { gameId: gameDoc.id };
+	}
 
 	// Check if the user is already a participant
 	const isParticipant = gameData.participants.some(
@@ -193,11 +193,15 @@ export async function startGame({ userId, gameId }: { userId: string; gameId: st
 		throw new Error('Game not found.');
 	}
 
-	const gameData = gameSnapshot.data();
+	const gameData = gameSnapshot.data() as Game;
 
 	// Check if the user is the creator
-	if (gameData.creator !== userId) {
+	if (gameData.createdBy !== userId) {
 		throw new Error('Only the creator can start the game.');
+	}
+
+	if (gameData.status !== 'waiting') {
+		throw new Error('Game is not in the waiting state.');
 	}
 
 	// Set initial game settings
@@ -205,20 +209,26 @@ export async function startGame({ userId, gameId }: { userId: string; gameId: st
 	const updatedGameData = {
 		status: 'deciding',
 		round: 1,
-		startedAt: now
+		startedAt: now,
+		statusStartedAt: now
 	};
 
 	// Generate card stacks
 	const participants = gameData.participants;
 	const numParticipants = participants.length;
 
+	if (numParticipants < 3) {
+		throw new Error('Not enough participants to start the game.');
+	}
+
 	const captionCards = await generateCaptionCards(numParticipants, participants);
 	const imageCards = await generateImageCards(numParticipants);
 
 	// Save card stacks to subcollections
+	// todo someday worry about concurrency issues
 	const cardStackRef = gameRef.collection(CARDSTACK_COLLECTION);
 	await cardStackRef.doc('captions').set(captionCards);
-	await cardStackRef.doc('images').set({ cards: imageCards });
+	await cardStackRef.doc('images').set(imageCards);
 
 	// Update the game document
 	await gameRef.update(updatedGameData);
@@ -226,13 +236,100 @@ export async function startGame({ userId, gameId }: { userId: string; gameId: st
 	return { success: true };
 }
 
+async function getCardStack(gameId: string, type: 'captions' | 'images'): Promise<CardStack> {
+	const cardStackRef = db.collection(GAME_COLLECTION).doc(gameId).collection(CARDSTACK_COLLECTION);
+	const cardStackSnapshot = await cardStackRef.doc(type).get();
+
+	if (!cardStackSnapshot.exists) {
+		throw new Error('Card stack not found.');
+	}
+	// todo add zod validation
+	return cardStackSnapshot.data() as CardStack;
+}
+
+export async function getUserCardStack({
+	userId,
+	cardStack: rawCardStack,
+	gameId
+}: {
+	userId: string;
+	cardStack?: CardStack;
+	gameId?: string;
+}): Promise<MemeCaption[]> {
+	let cardStack = rawCardStack;
+	if ((gameId === '' || gameId === undefined) && cardStack === undefined) {
+		return [];
+	}
+
+	if (cardStack === undefined && gameId !== '' && gameId !== undefined) {
+		// get the card stack from firestore
+		cardStack = await getCardStack(gameId, 'captions');
+	}
+
+	if (cardStack === undefined) {
+		return [];
+	}
+
+	if (cardStack.type === 'caption') {
+		const userCards = cardStack.cards
+			.slice(0, cardStack.cardsIndex)
+			.filter((card) => card.userId === userId && card.status === 'active');
+		const captionSnapshot = await db
+			.collection(CAPTION_COLLECTION)
+			.where(
+				'uid',
+				'in',
+				userCards.map((card) => card.captionId)
+			)
+			.get();
+		if (captionSnapshot.empty) {
+			return [];
+		}
+		return captionSnapshot.docs.map((doc) => doc.data() as MemeCaption);
+	} else {
+		return [];
+	}
+}
+
+export async function getRoundImage({
+	cardStack: rawCardStack,
+	gameId
+}: {
+	cardStack?: CardStack;
+	gameId?: string;
+}): Promise<MemeImage | undefined> {
+	let cardStack = rawCardStack;
+	if ((gameId === '' || gameId === undefined) && cardStack === undefined) {
+		throw new Error('Cannot process request.');
+	}
+
+	if (cardStack === undefined && gameId !== '' && gameId !== undefined) {
+		// get the card stack from firestore
+		cardStack = await getCardStack(gameId, 'images');
+	}
+
+	if (cardStack === undefined) {
+		throw new Error('No card stack found.');
+	}
+	if (cardStack.type === 'image') {
+		const currentCard = cardStack.cards[cardStack.cardsIndex];
+		const imageSnapshot = await db.collection(IMAGE_COLLECTION).doc(currentCard).get();
+		if (!imageSnapshot.exists) {
+			throw new Error('Image not found.');
+		}
+		return imageSnapshot.data() as MemeImage;
+	} else {
+		throw new Error('Invalid card stack type.');
+	}
+}
+
 // Subfunction: Generate caption cards
 async function generateCaptionCards(
 	numParticipants: number,
 	participants: Participant[]
-): Promise<{ cards: ParticipantCard[]; cardIndex: number }> {
+): Promise<Extract<CardStack, { type: 'caption' }>> {
 	const totalCaptionCards = 40 * numParticipants;
-	const captionSnapshot = await db.collection(CAPTION_COLLECTION).limit(totalCaptionCards).get();
+	const captionSnapshot = await db.collection(CAPTION_COLLECTION).get();
 
 	if (captionSnapshot.empty || captionSnapshot.size < totalCaptionCards) {
 		throw new Error('Not enough caption cards available.');
@@ -260,25 +357,33 @@ async function generateCaptionCards(
 	}
 
 	return {
-		cards: shuffledCaptions,
-		cardIndex
+		type: 'caption',
+		cards: shuffledCaptions.slice(0, totalCaptionCards),
+		cardsIndex: cardIndex
 	};
 }
 
 // Subfunction: Generate image cards
-async function generateImageCards(numParticipants: number): Promise<string[]> {
-	const totalImageCards = 8 * numParticipants;
-	const imageSnapshot = await db.collection(IMAGE_COLLECTION).limit(totalImageCards).get();
+async function generateImageCards(
+	numParticipants: number
+): Promise<Extract<CardStack, { type: 'image' }>> {
+	// cut the number in half so that we make it harder to have ties.
+	const totalImageCards = 4 * numParticipants;
+	const imageSnapshot = await db.collection(IMAGE_COLLECTION).get();
 
 	if (imageSnapshot.empty || imageSnapshot.size < totalImageCards) {
 		throw new Error('Not enough image cards available.');
 	}
 
 	const images = imageSnapshot.docs.map((doc) => doc.id);
-	return shuffleArray(images); // Precompute the order by shuffling
+	return {
+		cards: shuffleArray(images).slice(0, totalImageCards),
+		type: 'image',
+		cardsIndex: 0
+	}; // Precompute the order by shuffling
 }
 
-// Utility: Shuffle an array
+// Utility: Shuffle an array Fisher-Yates style
 function shuffleArray<T>(array: T[]): T[] {
 	for (let i = array.length - 1; i > 0; i--) {
 		const j = Math.floor(Math.random() * (i + 1));

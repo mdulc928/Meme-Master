@@ -10,6 +10,7 @@ import {
 let user: User | undefined = $state();
 
 export function getUser() {
+	console.log('Getting user', user);
 	return user;
 }
 
@@ -38,6 +39,7 @@ export async function fetchWithAuth(user: User | undefined, url: string, options
 }
 
 export async function signIn(auth: Auth) {
+	console.log('Signing in anonymously');
 	await setPersistence(auth, browserLocalPersistence);
 	const userCredential = await signInAnonymously(auth);
 	user = userCredential.user;

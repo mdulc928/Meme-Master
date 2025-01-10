@@ -1,46 +1,32 @@
 <script lang="ts">
-	import Button from '../../Button.svelte';
+	import { getUser } from '$lib/utils/auth.client.svelte';
+	import { getGame } from '../game.client.svelte';
+	import DecidingView from './DecidingView.svelte';
+	import VotingView from './VotingView.svelte';
+	import EndGameView from './EndGameView.svelte';
+	console.log('got stuff');
+	let user = $derived(getUser());
+	let game = $derived(getGame());
 
-	let view: 'decide' | 'vote' = $state('decide');
+	let view = $derived(game?.status);
+	let gameId = $derived(game?.uid);
+
+	console.log('stuff', view, gameId, user, game);
+
 	// this is rotating index. We allow them to keep pressing 1 button,
 	// and when we reach the end of list of cards we just mod that.
 	let currentCaptionIndex: number = $state(0);
+	$effect(() => console.log('hello there'));
 </script>
 
-{#snippet decidingView()}
-	<div class="flex flex-col">
-		<!--image takes at least half the screen-->
-		<div>
-			<!--I can use enhanced here I belive-->
-			<img src="https://hello.png" alt="the meme" />
-		</div>
-		<div class="flex">
-			<div class="flex flex-row">
-				<Button><i class="fas fa-angle-left"></i></Button>
-				<span>caption text</span>
-				<Button><i class="fas fa-angle-left"></i></Button>
-			</div>
-			<div>
-				<Button><i class="fas arrow-up"></i>Submit</Button>
-				<!--<Button>Discard</Button>-->
-			</div>
-		</div>
-	</div>
-{/snippet}
-
-{#snippet votingView()}
-	<!--judges only see this the entire round-->
-	<!--also the whole card is not fectched since we don't want to leak the card.-->
-	<div>
-		<div>Points Remaining: #### <span class="if judge red if player green">Role</span></div>
-		<div class="flex grow gap-3 overflow-y-auto">
-			<!--for each submission,then show the caption submitted.-->
-		</div>
-	</div>
-{/snippet}
-
-{#if view === 'decide'}
-	{@render decidingView()}
+{#if user}
+	{#if view === 'deciding'}
+		<DecidingView {user} />
+	{:else if view === 'voting'}
+		<VotingView {user} />
+	{:else if view === 'ended'}
+		<EndGameView />
+	{/if}
 {:else}
-	{@render votingView()}
+	<div>Bad Page</div>
 {/if}
