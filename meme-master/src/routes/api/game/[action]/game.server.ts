@@ -197,11 +197,13 @@ export async function startGame({ userId, gameId }: { userId: string; gameId: st
 
 	// Check if the user is the creator
 	if (gameData.createdBy !== userId) {
-		throw new Error('Only the creator can start the game.');
+		// throw new Error('User is not the creator of this game.');
+		return { success: true };
 	}
 
 	if (gameData.status !== 'waiting') {
-		throw new Error('Game is not in the waiting state.');
+		//	throw new Error('Game is not in the waiting state.');
+		return { success: true };
 	}
 
 	// Set initial game settings
@@ -437,16 +439,15 @@ submit a caption
 */
 
 export async function submitCaption({
-	authToken,
+	userId,
 	gameId,
 	captionId
 }: {
-	authToken: { userId: string };
+	userId: string;
 	gameId: string;
 	captionId: string;
 }): Promise<{ success: boolean; submissionId?: string }> {
-	// we will have to handle race conditions in here, but for now, we won't worry about it.
-	const { userId } = authToken;
+	// todo we will have to handle race conditions in here, but for now, we won't worry about it.
 
 	// Fetch the game
 	const gameRef = db.collection(GAME_COLLECTION).doc(gameId);
@@ -456,7 +457,8 @@ export async function submitCaption({
 		throw new Error('Game not found.');
 	}
 
-	const gameData = gameSnapshot.data();
+	// no need for validation here because all updates to this state is controlled by the server.
+	const gameData = gameSnapshot.data() as Game;
 
 	// Check if the user is a participant
 	const participant = gameData.participants.find((p: Participant) => p.user === userId);
