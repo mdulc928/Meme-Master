@@ -32,7 +32,7 @@
 
 	let submissions = $derived(getSubmissions());
 	$effect.pre(() => {
-		if (isJudge && gameId && round !== undefined) {
+		if (gameId && round !== undefined) {
 			return createSubmissionsListener({ gameId, gameRound: round });
 		}
 	});
