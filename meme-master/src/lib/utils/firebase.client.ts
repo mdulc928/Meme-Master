@@ -1,6 +1,7 @@
 import { initializeApp } from '@firebase/app';
 import { getAnalytics } from '@firebase/analytics';
 import { initializeFirestore } from '@firebase/firestore';
+import { getStorage } from '@firebase/storage';
 import { getAuth } from '@firebase/auth';
 import {
 	PUBLIC_FIREBASE_API_KEY,
@@ -25,7 +26,8 @@ const firebaseConfig = {
 
 const app = browser ? initializeApp(firebaseConfig) : undefined;
 const analytics = browser && app ? getAnalytics(app) : undefined;
-const firestore = browser && app ? initializeFirestore(app, {}) : undefined;
+const db = browser && app ? initializeFirestore(app, {}) : undefined;
 const auth = browser && app ? getAuth(app) : undefined;
+const storage = browser && app ? getStorage(app) : undefined;
 
-export { app, analytics, firestore, auth };
+export { app, analytics, db, auth, storage };

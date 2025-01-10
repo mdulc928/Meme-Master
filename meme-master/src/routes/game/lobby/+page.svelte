@@ -4,7 +4,7 @@
 	import { auth } from '$lib/utils/firebase.client';
 	import { onMount } from 'svelte';
 	import { createGameStateListener } from './game.client.svelte';
-	import Button from '../Button.svelte';
+	import Button from '../../Button.svelte';
 	import Participant from '$lib/components/Participant/Participant.svelte';
 	import { browser } from '$app/environment';
 

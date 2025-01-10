@@ -1,15 +1,15 @@
 import { GAME_COLLECTION } from '$lib/utils/collections';
 import { collection, limit, onSnapshot, query, where } from '@firebase/firestore';
-import { firestore } from '$lib/utils/firebase.client';
+import { db } from '$lib/utils/firebase.client';
 import type { Game } from '$lib/Game.svelte.js';
 
 export function createGameParticipantQuery({ gameId }: { gameId: string }) {
-	if (!firestore) {
+	if (!db) {
 		throw new Error('Firestore is not initialized.');
 	}
 
 	// Create a reference to the collection and return the query
-	const gameCollectionRef = collection(firestore, GAME_COLLECTION);
+	const gameCollectionRef = collection(db, GAME_COLLECTION);
 	return query(gameCollectionRef, where('uid', '==', gameId));
 }
 
@@ -20,12 +20,12 @@ export function createGameStateListener({
 	gameId: string;
 	callback: (game: Game) => void;
 }) {
-	if (!firestore) {
+	if (!db) {
 		throw new Error('Firestore is not initialized.');
 	}
 
 	// Create a reference to the collection and set up the query
-	const gameCollectionRef = collection(firestore, GAME_COLLECTION);
+	const gameCollectionRef = collection(db, GAME_COLLECTION);
 	const gameQuery = query(gameCollectionRef, where('uid', '==', gameId), limit(1));
 
 	// Set up the listener

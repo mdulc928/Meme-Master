@@ -35,7 +35,7 @@
 		gameCode = body.gameCode;
 
 		// goto the game lobby if game code available. where you can see who's joined.
-		goto(`/gameLobby?gameId=${gameId}&gameCode=${gameCode}`);
+		goto(`/game/lobby?gameId=${gameId}&gameCode=${gameCode}`);
 	}
 
 	async function joinGame() {
@@ -61,7 +61,7 @@
 		gameId = body.gameId;
 
 		// goto the game lobby if game code available. where you can see who's joined.
-		goto(`/gameLobby?gameId=${gameId}&gameCode=${gameCode}`);
+		goto(`/game/lobby?gameId=${gameId}&gameCode=${gameCode}`);
 	}
 </script>
 

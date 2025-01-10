@@ -1,21 +1,9 @@
+import type { MemeImage } from '$lib/components/Caption/Assets.svelte.js';
+import type { MemeCaption } from '$lib/components/Caption/Assets.svelte.js';
 import type { Participant } from '$lib/components/Participant/Participant.svelte.js';
 import type { Game } from '$lib/Game.svelte.js';
 import { db } from '$lib/server/firebase'; // Firestore instance
 import { GAME_COLLECTION } from '$lib/utils/collections';
-
-type Image = {
-	uid: string;
-	url: string;
-	hash: string;
-	owner: string;
-};
-
-type Caption = {
-	uid: string;
-	text: string;
-	owner: string;
-	categories: string[];
-};
 
 type User = {
 	uid: string;
@@ -42,13 +30,13 @@ type ParticipantCard = {
 
 type CardStack =
 	| {
-			captions: Caption[];
+			captions: MemeCaption[];
 			captionIndex: number;
 			locked: string;
 			type: 'caption';
 	  }
 	| {
-			images: Image[];
+			images: MemeImage[];
 			type: 'image';
 			imageIndex: number;
 	  };
