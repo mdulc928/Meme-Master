@@ -1,6 +1,13 @@
 import { error, json } from '@sveltejs/kit';
 import { decodeToken } from '../../shared.server';
-import { createNewGame, getRoundImage, getUserCardStack, joinGame, startGame } from './game.server';
+import {
+	createNewGame,
+	getRoundImage,
+	getUserCardStack,
+	joinGame,
+	startGame,
+	submitCaption
+} from './game.server';
 import { saveUser } from '../../user.server';
 
 export async function POST({ request, params }) {
@@ -37,6 +44,10 @@ export async function POST({ request, params }) {
 			case 'getRoundImage': {
 				const { gameId } = body;
 				return json(await getRoundImage({ gameId }));
+			}
+			case 'submitCaption': {
+				const { gameId, captionId } = body;
+				return json(await submitCaption({ userId, gameId, captionId }));
 			}
 			default:
 				return error(404, 'Not found');

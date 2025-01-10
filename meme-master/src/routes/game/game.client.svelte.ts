@@ -1,4 +1,4 @@
-import { GAME_COLLECTION } from '$lib/utils/collections';
+import { GAME_COLLECTION, SUBMISSION_COLLECTION } from '$lib/utils/collections';
 import { collection, limit, onSnapshot, query, where } from '@firebase/firestore';
 import { db } from '$lib/utils/firebase.client';
 import type { Game } from '$lib/Game.svelte.js';
@@ -83,4 +83,21 @@ export async function fetchRoundImage({ gameId, user }: { gameId: string; user: 
 	const data = await response.json();
 	// todo add zod validation
 	return data as MemeImage;
+}
+
+export async function submitCaption({ gameId, captionId, user }: { gameId: string; captionId: string; user: User }) {
+	const response = await fetchWithAuth(user, `/api/game/submitCaption`, {
+		method: 'POST',
+		headers: {
+			'Content-Type': 'application/json'
+		},
+		body: JSON.stringify({ gameId, captionId })
+	});
+
+	if (!response.ok) {
+		throw new Error('Failed to submit caption');
+	}
+	const data = await response.json();
+	// todo add zod validation
+	return data;
 }

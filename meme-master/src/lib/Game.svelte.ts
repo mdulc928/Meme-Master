@@ -13,3 +13,15 @@ export type Game = {
 	status: 'waiting' | 'deciding' | 'voting' | 'paused' | 'ended';
 	participants: Participant[];
 };
+
+
+export type Submission = {
+	uid: string; // firestore id
+	caption: string; // the id of tied caption
+	round: number;
+	timeSubmitted: Date;
+	points: {
+		amount: number;
+		user: string; // the user id
+	}[];
+};

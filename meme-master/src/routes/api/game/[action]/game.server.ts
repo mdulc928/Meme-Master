@@ -1,25 +1,14 @@
 import type { MemeImage } from '$lib/components/Caption/Assets.svelte.js';
 import type { MemeCaption } from '$lib/components/Caption/Assets.svelte.js';
 import type { Participant } from '$lib/components/Participant/Participant.svelte.js';
-import type { Game } from '$lib/Game.svelte.js';
+import type { Game, Submission } from '$lib/Game.svelte.js';
 import { db } from '$lib/server/firebase'; // Firestore instance
-import { GAME_COLLECTION } from '$lib/utils/collections';
+import { GAME_COLLECTION, SUBMISSION_COLLECTION } from '$lib/utils/collections';
 
 type User = {
 	uid: string;
 	authId: string;
 	createdAt: string;
-};
-
-type Submission = {
-	uid: string;
-	caption: string; // the id of tied caption
-	round: number;
-	timeSubmitted: Date;
-	points: {
-		amount: number;
-		user: User;
-	}[];
 };
 
 type ParticipantCard = {
@@ -43,8 +32,6 @@ type CardStack =
 
 const CAPTION_COLLECTION = 'captions';
 const IMAGE_COLLECTION = 'images';
-const SUBMISSION_COLLECTION = 'submissions';
-const PARTICIPANT_CARDS_COLLECTION = 'participantCards';
 const CARDSTACK_COLLECTION = 'cardStacks';
 
 /* create a new game
@@ -446,7 +433,7 @@ export async function submitCaption({
 	userId: string;
 	gameId: string;
 	captionId: string;
-}): Promise<{ success: boolean; submissionId?: string }> {
+}): Promise<{ success: boolean }> {
 	// todo we will have to handle race conditions in here, but for now, we won't worry about it.
 
 	// Fetch the game
@@ -466,76 +453,101 @@ export async function submitCaption({
 		throw new Error('User is not a participant in this game.');
 	}
 
+	if (participant.role === 'judge') {
+		throw new Error('Judges cannot submit a caption.');
+	}
+
 	// Check game status
 	if (gameData.status !== 'deciding') {
 		throw new Error('Game is not in the deciding phase.');
 	}
 
 	// Fetch the caption card stack
-	const cardStackRef = gameRef.collection(CARDSTACK_COLLECTION).doc('captions');
-	const cardStackSnapshot = await cardStackRef.get();
+	// todo narrow this type.
+	const cardStack = await getCardStack(gameId, 'captions');
 
-	if (!cardStackSnapshot.exists) {
-		throw new Error('Card stack not found.');
+	if (cardStack.type !== 'caption') {
+		throw new Error('Invalid card stack type.');
 	}
 
-	const cardStackData = cardStackSnapshot.data();
-
-	const userCard = cardStackData.cards.find(
+	const userCardIndex = cardStack.cards.findIndex(
 		(card: ParticipantCard) =>
 			card.userId === userId && card.captionId === captionId && card.status === 'active'
 	);
 
-	if (!userCard) {
+	if (userCardIndex === -1) {
 		throw new Error("Caption is not in the user's active cards or has already been used.");
 	}
 
 	// Check if the caption has already been submitted
-	const submissionRef = gameRef.collection(SUBMISSION_COLLECTION);
-	const submissionsSnapshot = await submissionRef
+	const submissionCollectionRef = gameRef.collection(SUBMISSION_COLLECTION);
+	const submissionsSnapshot = await submissionCollectionRef
 		.where('round', '==', gameData.round)
-		.where('caption', '==', captionId)
 		.get();
 
-	if (!submissionsSnapshot.empty) {
+	const currentActiveCards = cardStack.cards.slice(0, cardStack.cardsIndex);
+	const roundSubmissions = submissionsSnapshot.docs.map((doc) => doc.data() as Submission);
+
+	if (
+		roundSubmissions.some((s) => s.caption === captionId) ||
+		roundSubmissions.some((s) =>
+			currentActiveCards.some((c) => c.captionId === s.caption && c.userId === userId)
+		)
+	) {
 		throw new Error('Caption has already been submitted.');
 	}
 
+	const submissionRef = submissionCollectionRef.doc();
 	// Create a new submission
 	const submission: Submission = {
+		uid: submissionRef.id,
 		caption: captionId,
 		round: gameData.round,
 		timeSubmitted: new Date(),
 		points: []
 	};
 
-	const newSubmissionRef = await submissionRef.add(submission);
-	const submissionId = newSubmissionRef.id;
+	await submissionRef.set(submission);
 
-	// Change the caption's status from 'active' to 'discarded'
-	const cardIndex = cardStackData.cards.findIndex(
-		(card: ParticipantCard) => card.userId === userId && card.captionId === captionId
-	);
-	if (cardIndex !== -1) {
-		cardStackData.cards[cardIndex].status = 'discarded';
-	}
+	cardStack.cards[userCardIndex].status = 'discarded';
 
 	// Allocate the next available card to the user's active cards
-	const nextCardIndex = cardStackData.cardIndex;
-	const nextCard = cardStackData.cards[nextCardIndex];
+	const nextCardIndex = cardStack.cardsIndex;
+	const nextCard = cardStack.cards[nextCardIndex];
 
-	if (nextCard && !nextCard.userId) {
+	if (nextCard) {
 		nextCard.userId = userId;
 		nextCard.status = 'active';
-		cardStackData.cardIndex += 1; // Update the card index
+		cardStack.cardsIndex += 1; // Update the card index
 	} else {
 		throw new Error('No more available cards in the deck.');
 	}
 
 	// Update the card stack in Firestore
-	await cardStackRef.set(cardStackData);
+	await db
+		.collection(GAME_COLLECTION)
+		.doc(gameId)
+		.collection(CARDSTACK_COLLECTION)
+		.doc('captions')
+		.set(cardStack);
 
-	return { success: true, newCaptionCard: nextCard.captionId };
+	// check if we should start voting
+	const thisRoundSubmissions = await submissionCollectionRef
+		.where('round', '==', gameData.round)
+		.count()
+		.get();
+	const allPlayerRoles = gameData.participants.length;
+
+	// minus 1 because the judge doesn't submit a caption.
+	const allSubmitted = thisRoundSubmissions.data().count === allPlayerRoles - 1;
+	if (allSubmitted) {
+		// todo use a batch writer for all this stuff.
+		await gameRef.update({
+			status: 'voting',
+			statusStartedAt: new Date()
+		});
+	}
+	return { success: true };
 }
 
 /*
