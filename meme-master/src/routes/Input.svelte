@@ -8,6 +8,11 @@
 		containerClass,
 		...props
 	}: HTMLInputAttributes & { containerClass?: string } = $props();
+
+	let inputEl: HTMLInputElement;
+	export function focus() {
+		inputEl?.focus();
+	}
 </script>
 
 <div
@@ -17,6 +22,7 @@
 	)}
 >
 	<input
+		bind:this={inputEl}
 		{...props}
 		bind:value
 		class={twMerge('flex grow border-none bg-transparent outline-none ring-0', clsx(props?.class))}

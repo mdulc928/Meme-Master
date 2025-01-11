@@ -7,7 +7,7 @@
 
 	let gameId: number | undefined = $state();
 	let nickname: string | undefined = $state();
-	let gameCode: string | undefined = $state();
+	let gameCode: [string, string, string, string] = $state(['', '', '', '']);
 
 	let user = $derived(getUser());
 
@@ -32,10 +32,10 @@
 		const body = await response.json();
 
 		gameId = body.gameId;
-		gameCode = body.gameCode;
+		const newGameCode = body.gameCode;
 
 		// goto the game lobby if game code available. where you can see who's joined.
-		goto(`/game/lobby?gameId=${gameId}&gameCode=${gameCode}`);
+		goto(`/game/lobby?gameId=${gameId}&gameCode=${newGameCode}`);
 	}
 
 	async function joinGame() {
@@ -61,8 +61,12 @@
 		gameId = body.gameId;
 
 		// goto the game lobby if game code available. where you can see who's joined.
-		goto(`/game/lobby?gameId=${gameId}&gameCode=${gameCode}`);
+		goto(`/game/lobby?gameId=${gameId}&gameCode=${gameCode?.join('')}`);
 	}
+	let firstChar: Input;
+	let secondChar: Input;
+	let thirdChar: Input;
+	let fourthChar: Input;
 </script>
 
 <div class="flex h-full grow flex-col items-center px-5 pb-16 pt-4">
@@ -96,55 +100,67 @@
 		>
 			<!-- place to put the code -->
 			<Input
+				bind:this={firstChar}
 				placeholder="0"
-				onchange={({ currentTarget }) => {
+				bind:value={gameCode[0]}
+				oninput={({ currentTarget }) => {
 					const value = currentTarget.value;
-					if (gameCode) {
-						gameCode += value;
-					} else {
-						gameCode = value;
+					if (value.length > 0) {
+						secondChar?.focus();
+					}
+					if (value.length > 1) {
+						gameCode[0] = value.at(-1) ?? '';
 					}
 				}}
 				containerClass="w-fit focus-within:drop-shadow-lg"
 				class="h-10 w-9 items-center justify-center"
 			/>
 			<Input
+				bind:this={secondChar}
 				placeholder="0"
-				onchange={({ currentTarget }) => {
+				bind:value={gameCode[1]}
+				oninput={({ currentTarget }) => {
 					const value = currentTarget.value;
-					console.log('value 1', value);
-					if (gameCode) {
-						gameCode += value;
+					if (value.length > 0) {
+						thirdChar?.focus();
 					} else {
-						gameCode = value;
+						firstChar?.focus();
+					}
+					if (value.length > 1) {
+						gameCode[1] = value.at(-1) ?? '';
 					}
 				}}
 				containerClass="w-fit focus-within:drop-shadow-lg"
 				class="h-10 w-9 items-center justify-center"
 			/>
 			<Input
+				bind:this={thirdChar}
 				placeholder="0"
-				onchange={({ currentTarget }) => {
+				bind:value={gameCode[2]}
+				oninput={({ currentTarget }) => {
 					const value = currentTarget.value;
-					console.log('value 1', value);
-					if (gameCode) {
-						gameCode += value;
+					if (value.length > 0) {
+						fourthChar?.focus();
 					} else {
-						gameCode = value;
+						secondChar?.focus();
+					}
+					if (value.length > 1) {
+						gameCode[2] = value.at(-1) ?? '';
 					}
 				}}
 				containerClass="w-fit focus-within:drop-shadow-lg"
 				class="h-10 w-9 items-center justify-center"
 			/>
 			<Input
+				bind:this={fourthChar}
 				placeholder="0"
-				onchange={({ currentTarget }) => {
+				bind:value={gameCode[3]}
+				oninput={({ currentTarget }) => {
 					const value = currentTarget.value;
-					console.log('value 1', value);
-					if (gameCode) {
-						gameCode += value;
+					if (value.length < 1) {
+						thirdChar?.focus();
 					} else {
-						gameCode = value;
+						gameCode[3] = value.at(-1) ?? '';
 					}
 				}}
 				containerClass="w-fit focus-within:drop-shadow-lg"
