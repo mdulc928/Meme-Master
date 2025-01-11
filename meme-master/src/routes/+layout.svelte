@@ -3,11 +3,12 @@
 	import mainTrack from '$lib/assets/main.mp3';
 	import { onDestroy, onMount } from 'svelte';
 	import { clsx } from 'clsx';
+	import { browser } from '$app/environment';
 
 	let { children } = $props();
 	let myTrack: { audio?: HTMLAudioElement } = $state({});
 	const soundOnKey = 'sound-on';
-	let shouldPlay = $state(JSON.parse(localStorage.getItem(soundOnKey) ?? 'true'));
+	let shouldPlay = $state(browser ? JSON.parse(localStorage.getItem(soundOnKey) ?? 'true') : false);
 
 	onMount(() => {
 		const newAudio = new Audio(mainTrack);
