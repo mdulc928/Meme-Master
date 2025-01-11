@@ -1,4 +1,5 @@
 import { db, storage } from '$lib/utils/firebase.client';
+import type { User } from '@firebase/auth';
 import {
 	collection,
 	doc,
@@ -32,7 +33,13 @@ export type MemeCaption = {
 };
 
 // Function to handle caption file upload and processing
-export async function handleCaptionUpload({ captionFiles }: { captionFiles: FileList }) {
+export async function handleCaptionUpload({
+	captionFiles,
+	user
+}: {
+	captionFiles: FileList;
+	user?: User;
+}) {
 	if (db === undefined) {
 		return;
 	}
@@ -41,7 +48,7 @@ export async function handleCaptionUpload({ captionFiles }: { captionFiles: File
 		const parseTasks: Promise<MemeCaption[]>[] = [];
 		Array.from(captionFiles).forEach(async (file) => {
 			if (file.type === 'text/csv') {
-				parseTasks.push(parseCsv({ file, batch }));
+				parseTasks.push(parseCsv({ file, batch, user }));
 			} else {
 				alert('Please upload a valid CSV file.');
 			}
@@ -62,10 +69,12 @@ export async function handleCaptionUpload({ captionFiles }: { captionFiles: File
 // Function to parse CSV file into Caption objects using PapaParse
 export async function parseCsv({
 	file,
-	batch
+	batch,
+	user
 }: {
 	file: File;
 	batch: WriteBatch;
+	user?: User;
 }): Promise<MemeCaption[]> {
 	return new Promise((resolve, reject) => {
 		Papa.parse<{ text: string; categories: string }>(file, {
@@ -114,7 +123,7 @@ export async function parseCsv({
 					const caption: MemeCaption = {
 						uid: '',
 						text,
-						owner: 'admin',
+						owner: user?.uid ?? 'admin',
 						categories,
 						createdAt: new Date()
 					};
@@ -142,10 +151,12 @@ export async function parseCsv({
 // Function to handle image file upload
 export async function handleImageUpload({
 	imageFiles,
-	attributions
+	attributions,
+	user
 }: {
 	imageFiles: FileList;
 	attributions: Map<string, { source: string; display: string }>;
+	user?: User;
 }) {
 	console.log('atributions', attributions);
 	if (db === undefined || storage === undefined) {
@@ -183,7 +194,7 @@ export async function handleImageUpload({
 				uid: docRef.id, // Use the generated ID
 				url: downloadURL, // Use the Firebase Storage URL
 				hash,
-				owner: 'admin', // Replace with dynamic owner if needed
+				owner: user?.uid ?? 'admin', // Replace with dynamic owner if needed
 				createdAt: new Date(),
 				attribution: attributions.get(file.name) ?? { source: '', display: '' }
 			};

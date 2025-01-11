@@ -10,6 +10,7 @@
 	import Button from '../Button.svelte';
 	import { auth } from '$lib/utils/firebase.client';
 	import Input from '../Input.svelte';
+	import { dev } from '$app/environment';
 
 	let captionFiles: FileList | undefined = $state();
 	let imageFiles: FileList | undefined = $state();
@@ -67,7 +68,7 @@
 			class="disabled:cursor-none disabled:bg-opacity-50 disabled:text-gray-500"
 			onclick={() => {
 				if (captionFiles && captionFiles.length > 0) {
-					handleCaptionUpload({ captionFiles });
+					handleCaptionUpload({ captionFiles, user: dev ? undefined : user });
 				}
 			}}>Upload</Button
 		>
@@ -90,7 +91,11 @@
 
 				console.log('uploading now');
 				if (imageFiles && imageFiles.length > 0) {
-					imagesUploaded = await handleImageUpload({ imageFiles, attributions });
+					imagesUploaded = await handleImageUpload({
+						imageFiles,
+						attributions,
+						user: dev ? undefined : user
+					});
 				}
 			}}>Upload</Button
 		>
