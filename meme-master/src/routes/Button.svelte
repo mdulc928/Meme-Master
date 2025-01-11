@@ -15,7 +15,7 @@
 <button
 	{...props}
 	class={twMerge(
-		'flex items-center justify-center rounded-lg bg-purple-300 px-4 py-1 font-semibold focus:ring',
+		'flex items-center justify-center rounded-lg bg-purple-300 px-4 py-1 font-semibold outline-none focus:ring',
 		clsx(
 			{
 				'h-10 text-lg': size === 'sm',

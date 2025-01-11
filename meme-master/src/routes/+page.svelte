@@ -65,78 +65,98 @@
 	}
 </script>
 
-<div class="flex h-full grow flex-col items-center justify-end gap-5 px-5 py-16">
-	<div class="w-full grow rounded-lg bg-blue-100">Image</div>
-	<Input bind:value={nickname} placeholder="Enter a nickname..." containerClass="bg-slate-100" />
-	<Button
-		onclick={() => {
-			createGame();
-		}}
+<div class="flex h-full grow flex-col items-center px-5 pb-16 pt-4">
+	<div
+		class="flex max-w-[25em] grow flex-col items-center gap-4 [@media_(min-height:800px)]:gap-10"
 	>
-		Create Game
-	</Button>
-	<div class="flex flex-row gap-2 *:bg-blue-200">
-		<!-- place to put the code -->
+		<div class="relative flex h-0 max-h-80 grow flex-col overflow-clip rounded-lg bg-purple-800">
+			<enhanced:img src="/static/logo.png" alt="the Meme Master logo" class="drop-shadow-lg" />
+			<div
+				class="font-cursive absolute bottom-0 flex w-full items-center justify-center py-3 text-5xl font-bold italic text-amber-300 [text-shadow:0px_0px_10px_black]"
+			>
+				Meme Master
+			</div>
+		</div>
 		<Input
-			placeholder="0"
-			onchange={({ currentTarget }) => {
-				const value = currentTarget.value;
-				console.log('value 1', value);
-				if (gameCode) {
-					gameCode += value;
-				} else {
-					gameCode = value;
-				}
-			}}
-			containerClass="w-fit"
-			class="h-10 w-9 items-center justify-center"
+			bind:value={nickname}
+			placeholder="Enter a nickname..."
+			containerClass="bg-slate-100 focus-within:drop-shadow-lg lg:mt-5 [@media_(min-height:800px)]:mt-0"
+			class="text-2xl"
 		/>
-		<Input
-			placeholder="0"
-			onchange={({ currentTarget }) => {
-				const value = currentTarget.value;
-				console.log('value 1', value);
-				if (gameCode) {
-					gameCode += value;
-				} else {
-					gameCode = value;
-				}
+		<Button
+			onclick={() => {
+				createGame();
 			}}
-			containerClass="w-fit"
-			class="h-10 w-9 items-center justify-center"
-		/>
-		<Input
-			placeholder="0"
-			onchange={({ currentTarget }) => {
-				const value = currentTarget.value;
-				console.log('value 1', value);
-				if (gameCode) {
-					gameCode += value;
-				} else {
-					gameCode = value;
-				}
-			}}
-			containerClass="w-fit"
-			class="h-10 w-9 items-center justify-center"
-		/>
-		<Input
-			placeholder="0"
-			onchange={({ currentTarget }) => {
-				const value = currentTarget.value;
-				console.log('value 1', value);
-				if (gameCode) {
-					gameCode += value;
-				} else {
-					gameCode = value;
-				}
-			}}
-			containerClass="w-fit"
-			class="h-10 w-9 items-center justify-center"
-		/>
+			class="drop-shadow-lg lg:my-5 [@media_(min-height:800px)]:my-0"
+		>
+			Create Game
+		</Button>
+		<div
+			class="flex flex-row gap-2 *:bg-blue-200 lg:mb-5 [&_input]:h-14 [&_input]:w-14 [&_input]:text-center [&_input]:text-2xl [&_input]:caret-transparent [@media_(min-height:800px)]:mb-0"
+		>
+			<!-- place to put the code -->
+			<Input
+				placeholder="0"
+				onchange={({ currentTarget }) => {
+					const value = currentTarget.value;
+					if (gameCode) {
+						gameCode += value;
+					} else {
+						gameCode = value;
+					}
+				}}
+				containerClass="w-fit focus-within:drop-shadow-lg"
+				class="h-10 w-9 items-center justify-center"
+			/>
+			<Input
+				placeholder="0"
+				onchange={({ currentTarget }) => {
+					const value = currentTarget.value;
+					console.log('value 1', value);
+					if (gameCode) {
+						gameCode += value;
+					} else {
+						gameCode = value;
+					}
+				}}
+				containerClass="w-fit focus-within:drop-shadow-lg"
+				class="h-10 w-9 items-center justify-center"
+			/>
+			<Input
+				placeholder="0"
+				onchange={({ currentTarget }) => {
+					const value = currentTarget.value;
+					console.log('value 1', value);
+					if (gameCode) {
+						gameCode += value;
+					} else {
+						gameCode = value;
+					}
+				}}
+				containerClass="w-fit focus-within:drop-shadow-lg"
+				class="h-10 w-9 items-center justify-center"
+			/>
+			<Input
+				placeholder="0"
+				onchange={({ currentTarget }) => {
+					const value = currentTarget.value;
+					console.log('value 1', value);
+					if (gameCode) {
+						gameCode += value;
+					} else {
+						gameCode = value;
+					}
+				}}
+				containerClass="w-fit focus-within:drop-shadow-lg"
+				size={1}
+				class="h-14 w-14 text-center text-2xl"
+			/>
+		</div>
+		<Button
+			class="drop-shadow-lg"
+			onclick={() => {
+				joinGame();
+			}}>Join Game</Button
+		>
 	</div>
-	<Button
-		onclick={() => {
-			joinGame();
-		}}>Join Game</Button
-	>
 </div>
