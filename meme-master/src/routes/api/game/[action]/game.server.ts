@@ -4,7 +4,6 @@ import type { Participant } from '$lib/components/Participant/Participant.svelte
 import type { Game, Submission } from '$lib/Game.svelte.js';
 import { db } from '$lib/server/firebase'; // Firestore instance
 import { GAME_COLLECTION, SUBMISSION_COLLECTION } from '$lib/utils/collections';
-import { getGame } from '../../../game/game.client.svelte';
 
 type User = {
 	uid: string;
@@ -217,8 +216,8 @@ export async function startGame({ userId, gameId }: { userId: string; gameId: st
 	// Save card stacks to subcollections
 	// todo someday worry about concurrency issues
 	const cardStackRef = gameRef.collection(CARDSTACK_COLLECTION);
-	await cardStackRef.doc('captions').set(captionCards);
-	await cardStackRef.doc('images').set(imageCards);
+	await cardStackRef.doc(CAPTION_COLLECTION).set(captionCards);
+	await cardStackRef.doc(IMAGE_COLLECTION).set(imageCards);
 
 	// Update the game document
 	await gameRef.update(updatedGameData);
@@ -689,6 +688,18 @@ export async function submitVote({
 		if (winnerParticipant.cardsWon.length >= 8) {
 			gameData.status = 'ended';
 			gameData.endedAt = new Date();
+		}
+
+		if (gameData.status !== 'ended') {
+			// todo add the end game logic here.
+			const imageCards = await getCardStack(gameId, 'images');
+			imageCards.cardsIndex += 1;
+			await db
+				.collection(GAME_COLLECTION)
+				.doc(gameId)
+				.collection(CARDSTACK_COLLECTION)
+				.doc(IMAGE_COLLECTION)
+				.set(imageCards);
 		}
 	}
 
