@@ -2,6 +2,7 @@ import { error, json } from '@sveltejs/kit';
 import { decodeToken } from '../../shared.server';
 import {
 	createNewGame,
+	discardCaption,
 	getRoundImage,
 	getUserCardStack,
 	joinGame,
@@ -53,6 +54,10 @@ export async function POST({ request, params }) {
 			case 'submitVote': {
 				const { gameId, captionId, points } = body;
 				return json(await submitVote({ userId, gameId, captionId, points }));
+			}
+			case 'discardCaption': {
+				const { gameId, captionId } = body;
+				return json(await discardCaption({ userId, gameId, captionId }));
 			}
 			default:
 				return error(404, 'Not found');

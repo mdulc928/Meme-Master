@@ -307,16 +307,13 @@ export async function getRoundImage({
 	if (cardStack === undefined) {
 		throw new Error('No card stack found.');
 	}
-	if (cardStack.type === 'image') {
-		const currentCard = cardStack.cards[cardStack.cardsIndex];
-		const imageSnapshot = await db.collection(IMAGE_COLLECTION).doc(currentCard).get();
-		if (!imageSnapshot.exists) {
-			throw new Error('Image not found.');
-		}
-		return imageSnapshot.data() as MemeImage;
-	} else {
-		throw new Error('Invalid card stack type.');
+
+	const currentCard = cardStack.cards[cardStack.cardsIndex];
+	const imageSnapshot = await db.collection(IMAGE_COLLECTION).doc(currentCard).get();
+	if (!imageSnapshot.exists) {
+		throw new Error('Image not found.');
 	}
+	return imageSnapshot.data() as MemeImage;
 }
 
 // Subfunction: Generate caption cards
@@ -474,11 +471,6 @@ export async function submitCaption({
 	// Fetch the caption card stack
 	// todo narrow this type.
 	const cardStack = await getCardStack(gameId, 'captions');
-
-	if (cardStack.type !== 'caption') {
-		throw new Error('Invalid card stack type.');
-	}
-
 	const userCardIndex = cardStack.cards.findIndex(
 		(card: ParticipantCard) =>
 			card.userId === userId && card.captionId === captionId && card.status === 'active'
@@ -698,9 +690,6 @@ export async function submitVote({
 	if (participant.role === 'judge') {
 		participant.role = 'player';
 		gameData.participants[participantIndex] = participant;
-		gameData.round += 1;
-		gameData.status = 'deciding';
-		gameData.statusStartedAt = new Date();
 
 		// get all the submissions for this round
 		const pointsPerParticiant: [string, number][] = tallyPoints(allRoundSubmissions);
@@ -715,7 +704,11 @@ export async function submitVote({
 		if (winnerParticipant) {
 			imagesStack = await getCardStack(gameId, 'images');
 			const image = imagesStack.cards[imagesStack.cardsIndex];
-			winnerParticipant.cardsWon.push(image);
+			winnerParticipant.cardsWon.push({
+				wonAsset: image,
+				winningAsset: votedCaption.caption,
+				round: gameData.round
+			});
 			gameData.participants[winnerParticipantIndex] = winnerParticipant;
 		}
 
@@ -726,6 +719,10 @@ export async function submitVote({
 				p.points += userPoints;
 			}
 		});
+
+		gameData.round += 1;
+		gameData.status = 'deciding';
+		gameData.statusStartedAt = new Date();
 
 		if (winnerParticipant.cardsWon.length >= 8) {
 			gameData.status = 'ended';
@@ -758,7 +755,83 @@ export async function submitVote({
 }
 
 // discard a caption
-export async function discardCaption({}) {}
+export async function discardCaption({
+	userId,
+	gameId,
+	captionId
+}: {
+	userId: string;
+	gameId: string;
+	captionId: string;
+}) {
+	const gameRef = db.collection(GAME_COLLECTION).doc(gameId);
+	const gameSnapshot = await gameRef.get();
+
+	if (!gameSnapshot.exists) {
+		throw new Error('Game not found.');
+	}
+
+	const gameData = gameSnapshot.data() as Game;
+
+	// Check if the user is a participant
+	const participantIndex = gameData.participants.findIndex((p: Participant) => p.user === userId);
+	const participant = gameData.participants[participantIndex];
+	if (!participant) {
+		throw new Error('User is not a participant in this game.');
+	}
+
+	if (participant.role === 'judge') {
+		throw new Error('Judges cannot discard a caption.');
+	}
+
+	// Fetch the caption card stack
+	// todo narrow this type.
+	const cardStack = await getCardStack(gameId, 'captions');
+
+	if (cardStack.locked) {
+		throw new Error('Caption stack is locked.');
+	}
+
+	const userCardIndex = cardStack.cards.findIndex(
+		(card: ParticipantCard) =>
+			card.userId === userId && card.captionId === captionId && card.status === 'active'
+	);
+
+	if (userCardIndex === -1) {
+		throw new Error("Caption is not in the user's active cards or has already been used.");
+	}
+	// lock card stack
+	await db
+		.collection(GAME_COLLECTION)
+		.doc(gameId)
+		.collection(CARDSTACK_COLLECTION)
+		.doc('captions')
+		.update({ locked: userId }); // todo update firebase rule to check this field before updates.
+
+	cardStack.cards[userCardIndex].status = 'discarded';
+
+	// Allocate the next available card to the user's active cards
+	const nextCardIndex = cardStack.cardsIndex;
+	const nextCard = cardStack.cards[nextCardIndex];
+
+	if (nextCard) {
+		nextCard.userId = userId;
+		nextCard.status = 'active';
+		cardStack.cardsIndex += 1; // Update the card index
+	} else {
+		throw new Error('No more available cards in the deck.');
+	}
+
+	// Update the card stack in Firestore
+	await db
+		.collection(GAME_COLLECTION)
+		.doc(gameId)
+		.collection(CARDSTACK_COLLECTION)
+		.doc('captions')
+		.set(cardStack);
+
+	return { success: true };
+}
 
 function incrementGameCode(currentCode: string): string {
 	const charset = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ';

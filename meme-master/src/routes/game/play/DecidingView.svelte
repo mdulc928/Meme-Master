@@ -12,6 +12,7 @@
 		submitCaption
 	} from '../game.client.svelte';
 	import { createSubmissionsListener, getSubmissions } from '../submissions.client.svelte';
+	import Caption from '../Caption.svelte';
 
 	let { user, currentIndex = $bindable() }: { user: User; currentIndex: number } = $props();
 	let game = $derived(getGame());
@@ -50,16 +51,21 @@
 	});
 </script>
 
-<div class="flex flex-col">
+<div class="flex grow flex-col items-center px-3 py-5">
 	<!--image takes at most half the screen-->
-	<div>
+	<div class="max-h-1/3 max-w-[30em] overflow-hidden rounded-lg">
 		<!--todo I can use enhanced here I believe-->
 		<img src={image?.url} alt="the meme" />
 	</div>
 	{#if !isJudge}
-		<div class="flex">
-			<div class="flex flex-row">
+		{@const caption = cards?.at(currentIndex)}
+		{#if caption}
+			<Caption class="grow" {caption} position={currentIndex + 1} totalCaptions={cards?.length} />
+		{/if}
+		<div class="flex flex-row items-center gap-2">
+			<div class="flex flex-row items-center gap-2 py-3">
 				<Button
+					class="bg-black text-white"
 					onclick={() => {
 						if (cards) {
 							const length = cards.length;
@@ -71,14 +77,17 @@
 						}
 					}}><i class="fas fa-angle-left"></i></Button
 				>
-				<span>{cards?.at(currentIndex)?.text}</span>
 				<Button
+					class="bg-black text-white"
 					onclick={() => {
 						if (cards) {
 							const length = cards.length;
 							currentIndex = (currentIndex + 1) % length;
 						}
-					}}><i class="fas fa-angle-left"></i></Button
+					}}><i class="fas fa-angle-right"></i></Button
+				>
+				<Button class="bg-red-500">
+					<i class="fas fa-trash pr-2"></i>Discard</Button
 				>
 			</div>
 			<div>
