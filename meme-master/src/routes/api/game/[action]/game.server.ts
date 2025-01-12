@@ -16,19 +16,23 @@ type ParticipantCard = {
 	captionId: string; // Caption ID
 	status?: 'active' | 'discarded';
 };
+type CaptionCardStack = {
+	cards: ParticipantCard[];
+	cardsIndex: number;
+	locked?: string;
+	type: 'caption';
+};
 
-type CardStack =
-	| {
-			cards: ParticipantCard[];
-			cardsIndex: number;
-			locked?: string;
-			type: 'caption';
-	  }
-	| {
-			cards: string[];
-			type: 'image';
-			cardsIndex: number;
-	  };
+type ImageCardStack = {
+	cards: string[];
+	cardsIndex: number;
+	type: 'image';
+};
+
+// 2. Define a generic that maps 'captions' -> CaptionCardStack, 'images' -> ImageCardStack
+type CardStack<T extends 'captions' | 'images'> = T extends 'captions'
+	? CaptionCardStack
+	: ImageCardStack;
 
 const CAPTION_COLLECTION = 'captions';
 const IMAGE_COLLECTION = 'images';
@@ -119,7 +123,7 @@ export async function joinGame({
 	}
 
 	const gameDoc = gameSnapshot.docs[0];
-	const gameData = gameDoc.data();
+	const gameData = gameDoc.data() as Game;
 
 	if (gameData.status !== 'waiting') {
 		return { gameId: gameDoc.id };
@@ -225,7 +229,10 @@ export async function startGame({ userId, gameId }: { userId: string; gameId: st
 	return { success: true };
 }
 
-async function getCardStack(gameId: string, type: 'captions' | 'images'): Promise<CardStack> {
+async function getCardStack<T extends 'captions' | 'images'>(
+	gameId: string,
+	type: T
+): Promise<CardStack<T>> {
 	const cardStackRef = db.collection(GAME_COLLECTION).doc(gameId).collection(CARDSTACK_COLLECTION);
 	const cardStackSnapshot = await cardStackRef.doc(type).get();
 
@@ -233,7 +240,7 @@ async function getCardStack(gameId: string, type: 'captions' | 'images'): Promis
 		throw new Error('Card stack not found.');
 	}
 	// todo add zod validation
-	return cardStackSnapshot.data() as CardStack;
+	return cardStackSnapshot.data() as CardStack<T>;
 }
 
 export async function getUserCardStack({
@@ -242,7 +249,7 @@ export async function getUserCardStack({
 	gameId
 }: {
 	userId: string;
-	cardStack?: CardStack;
+	cardStack?: CardStack<'captions'>;
 	gameId?: string;
 }): Promise<MemeCaption[]> {
 	let cardStack = rawCardStack;
@@ -284,7 +291,7 @@ export async function getRoundImage({
 	cardStack: rawCardStack,
 	gameId
 }: {
-	cardStack?: CardStack;
+	cardStack?: CardStack<'images'>;
 	gameId?: string;
 }): Promise<MemeImage | undefined> {
 	let cardStack = rawCardStack;
@@ -316,7 +323,7 @@ export async function getRoundImage({
 async function generateCaptionCards(
 	numParticipants: number,
 	participants: Participant[]
-): Promise<Extract<CardStack, { type: 'caption' }>> {
+): Promise<CardStack<'captions'>> {
 	const totalCaptionCards = 40 * numParticipants;
 	const captionSnapshot = await db.collection(CAPTION_COLLECTION).get();
 
@@ -353,9 +360,7 @@ async function generateCaptionCards(
 }
 
 // Subfunction: Generate image cards
-async function generateImageCards(
-	numParticipants: number
-): Promise<Extract<CardStack, { type: 'image' }>> {
+async function generateImageCards(numParticipants: number): Promise<CardStack<'images'>> {
 	// cut the number in half so that we make it harder to have ties.
 	const totalImageCards = 4 * numParticipants;
 	const imageSnapshot = await db.collection(IMAGE_COLLECTION).get();
@@ -433,7 +438,11 @@ export async function submitCaption({
 	userId: string;
 	gameId: string;
 	captionId: string;
-}): Promise<{ success: boolean }> {
+}): Promise<{
+	success: boolean;
+	// we return this submission so that we can listen for changes to this in the client.
+	submissionId: string;
+}> {
 	// todo we will have to handle race conditions in here, but for now, we won't worry about it.
 
 	// Fetch the game
@@ -547,7 +556,7 @@ export async function submitCaption({
 			statusStartedAt: new Date()
 		});
 	}
-	return { success: true };
+	return { success: true, submissionId: submissionRef.id };
 }
 
 /*
@@ -608,7 +617,7 @@ export async function submitVote({
 	// Check voting eligibility and points
 	const maxPoints =
 		participant.role === 'judge'
-			? 1000 * gameData.participants.length
+			? 2000 * gameData.participants.length // todo adjust this.
 			: Math.min(3000, 500 * (gameData.participants.length - 1));
 
 	if (points % 100 !== 0 || points > maxPoints || points <= 0) {
@@ -622,17 +631,16 @@ export async function submitVote({
 		throw new Error('No submissions found.');
 	}
 
-	const allSubmissions = submissionSnapshot.docs.map((doc) => doc.data() as Submission);
+	const allRoundSubmissions = submissionSnapshot.docs.map((doc) => doc.data() as Submission);
 
-	const judgeHasVoted = allSubmissions.some((s) => s.points.some((p) => p.user === judge?.user));
+	const judgeHasVoted = allRoundSubmissions.some((s) =>
+		s.points.some((p) => p.user === judge?.user)
+	);
 	if (judgeHasVoted && participant.role === 'judge') {
 		throw new Error('Judge has already voted for this round.');
 	}
 
 	const cardStack = await getCardStack(gameId, 'captions');
-	if (cardStack.type !== 'caption') {
-		throw new Error('Invalid card stack type.');
-	}
 	const activeCards = cardStack.cards.slice(0, cardStack.cardsIndex);
 
 	const allUsersCards = activeCards.filter((card) => card?.userId === userId);
@@ -641,32 +649,40 @@ export async function submitVote({
 		throw new Error('User cannot vote for their own caption.');
 	}
 
-	const votedCaption = allSubmissions.find((s) => s.caption === captionId);
+	const votedCaption = allRoundSubmissions.find((s) => s.caption === captionId);
 	if (!votedCaption) {
 		throw new Error('Caption not found in submissions.');
 	}
 
+	// Check if the user has enough points to vote
+	const allUsersVotesPoints = allRoundSubmissions.reduce((acc, s) => {
+		// todo this is a bit of a mess.
+		const userPoints = s.points.find((p) => p.user === userId);
+		if (userPoints) {
+			acc += userPoints.amount;
+		}
+		return acc;
+	}, 0);
+
+	if (allUsersVotesPoints + points > maxPoints) {
+		throw new Error('User has insufficient points to vote.');
+	}
+
+	// Add the vote to the caption
 	votedCaption.points.push({ user: userId, amount: points, awardedAt: new Date() });
 	await submissionCollectionRef.doc(votedCaption.uid).set(votedCaption);
 
-	const pointTotal = votedCaption.points.reduce((acc, p) => acc + p.amount, 0);
-	const cardOwner = activeCards.find((card) => card.captionId === captionId)?.userId;
-	const cardOwnerParticipantIndex = gameData.participants.findIndex((p) => p.user === cardOwner);
-	const cardOwnerParticipant = gameData.participants[cardOwnerParticipantIndex];
-	if (cardOwnerParticipant) {
-		cardOwnerParticipant.points = pointTotal;
-		gameData.participants[cardOwnerParticipantIndex] = cardOwnerParticipant;
-	}
+	// we don't need to tally the points in the  backend when users are submitting.
+	/**
+	 * 1. this is very race condition prone.
+	 * 2. we can do this in the frontend with a listener on the submissions.
+	 */
 
-	if (participant.role === 'judge') {
-		participant.role = 'player';
-		gameData.participants[participantIndex] = participant;
-		gameData.round += 1;
-		gameData.status = 'deciding';
-		gameData.statusStartedAt = new Date();
+	// update the owner of the caption with the total points.
 
+	function tallyPoints(submissions: Submission[]): [string, number][] {
 		const pointsPerParticiant: [string, number][] = [];
-		allSubmissions.forEach((s) => {
+		submissions.forEach((s) => {
 			let totalPoints = 0;
 			s.points.forEach((p) => {
 				totalPoints += p.amount;
@@ -676,15 +692,41 @@ export async function submitVote({
 				pointsPerParticiant.push([cardOwner, totalPoints]);
 			}
 		});
+		return pointsPerParticiant;
+	}
+
+	if (participant.role === 'judge') {
+		participant.role = 'player';
+		gameData.participants[participantIndex] = participant;
+		gameData.round += 1;
+		gameData.status = 'deciding';
+		gameData.statusStartedAt = new Date();
+
+		// get all the submissions for this round
+		const pointsPerParticiant: [string, number][] = tallyPoints(allRoundSubmissions);
+		// using all submissions is fine here because allsubmissions is a reference object.
+		// so the points for this rount have already been added to user's captions.
 
 		pointsPerParticiant.sort((a, b) => b[1] - a[1]);
 		const winner = pointsPerParticiant[0];
 		const winnerParticipantIndex = gameData.participants.findIndex((p) => p.user === winner[0]);
 		const winnerParticipant = gameData.participants[winnerParticipantIndex];
+		let imagesStack: CardStack<'images'> | undefined;
 		if (winnerParticipant) {
-			winnerParticipant.cardsWon.push(captionId);
+			imagesStack = await getCardStack(gameId, 'images');
+			const image = imagesStack.cards[imagesStack.cardsIndex];
+			winnerParticipant.cardsWon.push(image);
 			gameData.participants[winnerParticipantIndex] = winnerParticipant;
 		}
+
+		const pointsMap = new Map(pointsPerParticiant);
+		gameData.participants.forEach((p) => {
+			const userPoints = pointsMap.get(p.user);
+			if (userPoints) {
+				p.points += userPoints;
+			}
+		});
+
 		if (winnerParticipant.cardsWon.length >= 8) {
 			gameData.status = 'ended';
 			gameData.endedAt = new Date();
@@ -692,14 +734,16 @@ export async function submitVote({
 
 		if (gameData.status !== 'ended') {
 			// todo add the end game logic here.
-			const imageCards = await getCardStack(gameId, 'images');
-			imageCards.cardsIndex += 1;
+			if (!imagesStack) {
+				imagesStack = await getCardStack(gameId, 'images');
+			}
+			imagesStack.cardsIndex += 1;
 			await db
 				.collection(GAME_COLLECTION)
 				.doc(gameId)
 				.collection(CARDSTACK_COLLECTION)
 				.doc(IMAGE_COLLECTION)
-				.set(imageCards);
+				.set(imagesStack);
 		}
 	}
 
