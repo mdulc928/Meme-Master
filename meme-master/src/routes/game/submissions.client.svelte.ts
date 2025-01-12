@@ -12,6 +12,11 @@ export function setSubmissions(updates: Submission[] | undefined) {
 	submissions = updates;
 }
 
+// the submissions submitted are returned by the submit caption so we need 
+// to store these submission in localstorage. 
+// this will allow us to tally point in the frontend without too 
+// much worry about race conditions.
+
 export function createSubmissionsListener({
 	gameId,
 	gameRound

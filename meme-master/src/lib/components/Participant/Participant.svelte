@@ -19,13 +19,15 @@
 <!--don't forget to change the backgroudn-->
 <div
 	class={twMerge(
-		'relative flex flex-col items-center justify-center gap-2 rounded bg-slate-200',
+		'relative flex flex-col items-center justify-center overflow-hidden rounded bg-slate-200 px-2',
 		clsx(customClasses)
 	)}
 >
-	<span class="font-semibold">{participant.nickname.toUpperCase()}</span>
+	<span class="h-1/2 font-serif text-2xl">{participant.points}</span>
+	<span class="flex max-w-full items-center justify-center font-semibold"
+		>{participant.nickname.toUpperCase()}</span
+	>
 	{#if rank !== undefined}
 		<span class="right-0 top-0">#{rank}</span>
 	{/if}
-	<span class="font-serif text-2xl">{participant.points}</span>
 </div>

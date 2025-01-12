@@ -361,8 +361,8 @@ async function generateCaptionCards(
 
 // Subfunction: Generate image cards
 async function generateImageCards(numParticipants: number): Promise<CardStack<'images'>> {
-	// cut the number in half so that we make it harder to have ties.
-	const totalImageCards = 4 * numParticipants;
+	// in the spirit of competition, we will only have 5 images per round.
+	const totalImageCards = 5 * numParticipants;
 	const imageSnapshot = await db.collection(IMAGE_COLLECTION).get();
 
 	if (imageSnapshot.empty || imageSnapshot.size < totalImageCards) {
@@ -738,6 +738,11 @@ export async function submitVote({
 				imagesStack = await getCardStack(gameId, 'images');
 			}
 			imagesStack.cardsIndex += 1;
+			if (imagesStack.cardsIndex >= imagesStack.cards.length) {
+				gameData.status = 'ended';
+				gameData.endedAt = new Date();
+				gameData.statusMessage = 'No more images available';
+			}
 			await db
 				.collection(GAME_COLLECTION)
 				.doc(gameId)

@@ -4,7 +4,7 @@
 	import { clsx } from 'clsx';
 
 	let {
-		value = $bindable(),
+		value: val = $bindable(),
 		containerClass,
 		...props
 	}: HTMLInputAttributes & { containerClass?: string } = $props();
@@ -24,7 +24,7 @@
 	<input
 		bind:this={inputEl}
 		{...props}
-		bind:value
+		bind:value={val}
 		class={twMerge('flex grow border-none bg-transparent outline-none ring-0', clsx(props?.class))}
 	/>
 </div>

@@ -7,6 +7,7 @@ export type Game = {
 	createdAt: Date;
 	startedAt?: Date;
 	endedAt?: Date;
+	statusMessage?: string;
 	statusStartedAt: Date;
 	pausedLengths?: number[];
 	round: number;
@@ -14,6 +15,12 @@ export type Game = {
 	participants: Participant[];
 };
 
+/**
+ * A submission is a meme captionn sent by a participant..
+ *
+ * Note: We are not storing who submitted since there is an element of anonymity.
+ * for when voting is happening.
+ */
 
 export type Submission = {
 	uid: string; // firestore id

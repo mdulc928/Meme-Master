@@ -6,7 +6,7 @@
 	import { goto } from '$app/navigation';
 
 	let gameId: number | undefined = $state();
-	let nickname: string | undefined = $state();
+	let nickname: string = $state('');
 	let gameCode: [string, string, string, string] = $state(['', '', '', '']);
 
 	let user = $derived(getUser());
@@ -17,7 +17,7 @@
 			authedUser = await signIn(auth);
 		}
 
-		if (nickname?.length ?? 0 <= 0) {
+		if ((nickname?.length ?? 0) <= 0) {
 			window.alert('Please make sure to input a nickname');
 			return;
 		}
@@ -48,20 +48,23 @@
 			window.alert('Please make sure to input a nickname and game code.');
 			return;
 		}
-
+		console.log('gameCode', gameCode);
 		const response = await fetchWithAuth(authedUser, '/api/game/join', {
 			method: 'POST',
 			body: JSON.stringify({
-				nickname,
-				gameCode
+				nickname: nickname.slice(0, 9),
+				gameCode: gameCode.join('')
 			})
 		});
 
-		const body = await response.json();
-		gameId = body.gameId;
-
-		// goto the game lobby if game code available. where you can see who's joined.
-		goto(`/game/lobby?gameId=${gameId}&gameCode=${gameCode?.join('')}`);
+		if (response.ok) {
+			const body = await response.json();
+			gameId = body.gameId;
+			if (gameId !== undefined) {
+				// goto the game lobby if game code available. where you can see who's joined.
+				goto(`/game/lobby?gameId=${gameId}&gameCode=${gameCode?.join('')}`);
+			}
+		}
 	}
 	let firstChar: Input;
 	let secondChar: Input;

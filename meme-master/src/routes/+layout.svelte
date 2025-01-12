@@ -25,7 +25,8 @@
 		myTrack?.audio?.pause();
 	});
 
-	let showHelp = $state(true);
+	// in the future we could probably save this in local storage
+	let showHelp = $state(false);
 </script>
 
 {#snippet helpContent()}
