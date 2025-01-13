@@ -12,6 +12,9 @@ import {
 import { getDownloadURL, uploadBytes, ref } from '@firebase/storage';
 import Papa from 'papaparse';
 
+export const CAPTION_COLLECTION = 'captions';
+export const IMAGE_COLLECTION = 'images';
+
 export type MemeImage = {
 	uid: string;
 	url: string;
@@ -131,7 +134,7 @@ export async function parseCsv({
 						console.warn('Database is undefined. No captions will be parsed.');
 						return resolve([]);
 					}
-					const docRef = doc(collection(db, 'captions')); // Automatically generates a unique ID
+					const docRef = doc(collection(db, CAPTION_COLLECTION)); // Automatically generates a unique ID
 					caption.uid = docRef.id; // Assign the generated ID to the caption object
 					console.log(`Adding caption: ${JSON.stringify(caption)}`);
 					batch.set(docRef, caption);
@@ -176,17 +179,17 @@ export async function handleImageUpload({
 				return;
 			}
 			// Check for duplicate hash in Firestore
-			const q = query(collection(db, 'images'), where('hash', '==', hash));
+			const q = query(collection(db, IMAGE_COLLECTION), where('hash', '==', hash));
 			const querySnapshot = await getDocs(q);
 			if (!querySnapshot.empty) {
 				console.log(`Duplicate file detected with hash: ${hash}`);
 				return; // Skip uploading duplicate file
 			}
 
-			const docRef = doc(collection(db, 'images')); // Automatically generates a unique ID
+			const docRef = doc(collection(db, IMAGE_COLLECTION)); // Automatically generates a unique ID
 
 			// Upload original file to Firebase Storage
-			const storageRef = ref(storage, `images/${docRef.id}/${file.name}`);
+			const storageRef = ref(storage, `${IMAGE_COLLECTION}/${docRef.id}/${file.name}`);
 			await uploadBytes(storageRef, file);
 			const downloadURL = await getDownloadURL(storageRef);
 

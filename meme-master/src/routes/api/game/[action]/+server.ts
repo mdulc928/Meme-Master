@@ -4,9 +4,12 @@ import {
 	createNewGame,
 	discardCaption,
 	getRoundImage,
+	getSubmissionUser,
 	getUserCardStack,
+	getUserSubmission,
 	joinGame,
 	startGame,
+	startVoting,
 	submitCaption,
 	submitVote
 } from './game.server';
@@ -58,6 +61,18 @@ export async function POST({ request, params }) {
 			case 'discardCaption': {
 				const { gameId, captionId } = body;
 				return json(await discardCaption({ userId, gameId, captionId }));
+			}
+			case 'startVoting': {
+				const { gameId } = body;
+				return json(await startVoting({ userId, gameId }));
+			}
+			case 'getUserSubmission': {
+				const { gameId } = body;
+				return json(await getUserSubmission({ userId, gameId }));
+			}
+			case 'getSubmissionUser': {
+				const { gameId, submissionId } = body;
+				return json(await getSubmissionUser({ gameId, submissionId }));
 			}
 			default:
 				return error(404, 'Not found');

@@ -1,4 +1,8 @@
-import type { MemeImage } from '$lib/components/Caption/Assets.svelte.js';
+import {
+	CAPTION_COLLECTION,
+	IMAGE_COLLECTION,
+	type MemeImage
+} from '$lib/components/Caption/Assets.svelte.js';
 import type { MemeCaption } from '$lib/components/Caption/Assets.svelte.js';
 import type { Participant } from '$lib/components/Participant/Participant.svelte.js';
 import type { Game, Submission } from '$lib/Game.svelte.js';
@@ -34,8 +38,6 @@ type CardStack<T extends 'captions' | 'images'> = T extends 'captions'
 	? CaptionCardStack
 	: ImageCardStack;
 
-const CAPTION_COLLECTION = 'captions';
-const IMAGE_COLLECTION = 'images';
 const CARDSTACK_COLLECTION = 'cardStacks';
 
 /* create a new game
@@ -439,6 +441,8 @@ export async function submitCaption({
 	success: boolean;
 	// we return this submission so that we can listen for changes to this in the client.
 	submissionId: string;
+	//
+	nextCardId: string;
 }> {
 	// todo we will have to handle race conditions in here, but for now, we won't worry about it.
 
@@ -529,7 +533,7 @@ export async function submitCaption({
 		.collection(GAME_COLLECTION)
 		.doc(gameId)
 		.collection(CARDSTACK_COLLECTION)
-		.doc('captions')
+		.doc(CAPTION_COLLECTION)
 		.set(cardStack);
 
 	// check if we should start voting
@@ -548,7 +552,83 @@ export async function submitCaption({
 			statusStartedAt: new Date()
 		});
 	}
-	return { success: true, submissionId: submissionRef.id };
+	return { success: true, submissionId: submissionRef.id, nextCardId: nextCard.captionId };
+}
+
+export async function getUserSubmission({ userId, gameId }: { userId: string; gameId: string }) {
+	const gameRef = db.collection(GAME_COLLECTION).doc(gameId);
+	const gameSnapshot = await gameRef.get();
+	if (!gameSnapshot.exists) {
+		throw new Error('Game not found.');
+	}
+	const gameData = gameSnapshot.data() as Game;
+	const participant = gameData.participants.find((p) => p.user === userId);
+	if (!participant) {
+		throw new Error('User is not a participant in this game.');
+	}
+	const cardStack = await getCardStack(gameId, 'captions');
+	const userCards = cardStack.cards
+		.slice(0, cardStack.cardsIndex)
+		.filter((card) => card.userId === userId);
+
+	const submissionCollectionRef = gameRef.collection(SUBMISSION_COLLECTION);
+	const submissionsSnapshot = await submissionCollectionRef
+		.where('round', '==', gameData.round)
+		.where(
+			'caption',
+			'in',
+			userCards.map((card) => card.captionId)
+		)
+		.get();
+
+	if (submissionsSnapshot.empty) {
+		return {};
+	}
+
+	return { submissionId: submissionsSnapshot.docs[0].id };
+}
+
+export async function getSubmissionUser({
+	gameId,
+	submissionId
+}: {
+	gameId: string;
+	submissionId: string;
+}) {
+	const gameRef = db.collection(GAME_COLLECTION).doc(gameId);
+	const submissionCollectionRef = gameRef.collection(SUBMISSION_COLLECTION);
+	const submissionSnapshot = await submissionCollectionRef.doc(submissionId).get();
+	if (!submissionSnapshot.exists) {
+		throw new Error('Submission not found.');
+	}
+	const submissionData = submissionSnapshot.data() as Submission;
+
+	const cardStack = await getCardStack(gameId, 'captions');
+	const activeCards = cardStack.cards.slice(0, cardStack.cardsIndex);
+
+	const userId = activeCards.find((card) => card.captionId === submissionData.caption)?.userId;
+	return { userId };
+}
+
+export async function startVoting({ gameId, userId }: { gameId: string; userId: string }) {
+	const gameRef = db.collection(GAME_COLLECTION).doc(gameId);
+	const gameSnapshot = await gameRef.get();
+	if (!gameSnapshot.exists) {
+		throw new Error('Game not found.');
+	}
+
+	const gameData = gameSnapshot.data() as Game;
+	if (gameData.status !== 'deciding') {
+		throw new Error('Game is not in deciding state.');
+	}
+	if (gameData.participants.find((p) => p.user === userId)?.role !== 'judge') {
+		throw new Error('User is not a judge.');
+	}
+
+	await gameRef.update({
+		status: 'voting',
+		statusStartedAt: new Date()
+	});
 }
 
 /*
@@ -830,7 +910,7 @@ export async function discardCaption({
 		.doc('captions')
 		.set(cardStack);
 
-	return { success: true };
+	return { success: true, nextCard: nextCard.captionId };
 }
 
 function incrementGameCode(currentCode: string): string {

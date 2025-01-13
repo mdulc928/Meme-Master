@@ -4,6 +4,7 @@
 	import { auth } from '$lib/utils/firebase.client';
 	import Input from './Input.svelte';
 	import { goto } from '$app/navigation';
+	import clsx from 'clsx';
 
 	let gameId: number | undefined = $state();
 	let nickname: string = $state('');
@@ -116,7 +117,7 @@
 					}
 				}}
 				containerClass="w-fit focus-within:drop-shadow-lg"
-				class="h-10 w-9 items-center justify-center"
+				class={clsx('h-10 w-9 items-center justify-center', gameCode[0] !== '' && 'font-extrabold')}
 			/>
 			<Input
 				bind:this={secondChar}
@@ -133,8 +134,13 @@
 						gameCode[1] = value.at(-1) ?? '';
 					}
 				}}
+				onkeydown={({ key }) => {
+					if (key === 'Backspace' && gameCode[1] === '') {
+						firstChar?.focus();
+					}
+				}}
 				containerClass="w-fit focus-within:drop-shadow-lg"
-				class="h-10 w-9 items-center justify-center"
+				class={clsx('h-10 w-9 items-center justify-center', gameCode[1] !== '' && 'font-extrabold')}
 			/>
 			<Input
 				bind:this={thirdChar}
@@ -151,8 +157,13 @@
 						gameCode[2] = value.at(-1) ?? '';
 					}
 				}}
+				onkeydown={({ key }) => {
+					if (key === 'Backspace' && gameCode[2] === '') {
+						secondChar?.focus();
+					}
+				}}
 				containerClass="w-fit focus-within:drop-shadow-lg"
-				class="h-10 w-9 items-center justify-center"
+				class={clsx('h-10 w-9 items-center justify-center', gameCode[2] !== '' && 'font-extrabold')}
 			/>
 			<Input
 				bind:this={fourthChar}
@@ -166,9 +177,14 @@
 						gameCode[3] = value.at(-1) ?? '';
 					}
 				}}
+				onkeydown={({ key }) => {
+					if (key === 'Backspace' && gameCode[3] === '') {
+						thirdChar?.focus();
+					}
+				}}
 				containerClass="w-fit focus-within:drop-shadow-lg"
 				size={1}
-				class="h-14 w-14 text-center text-2xl"
+				class={clsx('h-10 w-9 items-center justify-center', gameCode[3] !== '' && 'font-extrabold')}
 			/>
 		</div>
 		<Button

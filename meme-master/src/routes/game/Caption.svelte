@@ -2,6 +2,7 @@
 	import type { MemeCaption } from '$lib/components/Caption/Assets.svelte';
 	import clsx from 'clsx';
 	import { twMerge } from 'tailwind-merge';
+	import { getNewCard } from './game.client.svelte';
 
 	let {
 		class: customClass,
@@ -16,6 +17,8 @@
 		position?: number;
 		totalCaptions?: number;
 	} = $props();
+
+	let isNew = $derived(getNewCard() === caption.uid);
 </script>
 
 <div class={twMerge(clsx(customClass))}>
@@ -23,6 +26,9 @@
 		>Caption
 		{#if position !== undefined && totalCaptions !== undefined}
 			({position}/{totalCaptions})
+		{/if}
+		{#if isNew}
+			<span class="rounded-full bg-amber-300 px-1">New</span>
 		{/if}
 	</span>
 	<div>{caption.text}</div>

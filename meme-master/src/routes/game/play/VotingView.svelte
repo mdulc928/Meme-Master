@@ -1,20 +1,22 @@
 <script lang="ts">
 	import type { User } from '@firebase/auth';
 	import {
-		fetchRoundImage,
+		addSubmittedCaption,
+		getCaptionCard,
 		getGame,
-		getRoundImage,
-		setRoundImage,
+		getSubmittedCaptions,
+		getUserSubmission,
 		submitVote
 	} from '../game.client.svelte';
-	import { createSubmissionsListener, getSubmissions } from '../submissions.client.svelte';
+	import { getSubmissions } from '../submissions.client.svelte';
 	import Button from '../../Button.svelte';
+	import clsx from 'clsx';
 
 	let { user }: { user: User } = $props();
-	let image = $derived(getRoundImage());
 	let game = $derived(getGame());
 	let gameId = $derived(game?.uid);
 	let round = $derived(game?.round);
+	let status = $derived(game?.status);
 
 	let isJudge = $derived.by(() => {
 		return !!game?.participants?.some(
@@ -22,45 +24,80 @@
 		);
 	});
 
+	let submissions = $derived(getSubmissions());
+	let submissionsLength = $derived(submissions?.length ?? 0);
+	// it's be cool to add that one day user can spectate and so they see what everyone has.
+	let userSubmission = $derived.by(() => {
+		return submissions?.find((submission) => submission.uid === getUserSubmission());
+	});
+
+	let submittedCaptions = $derived(getSubmittedCaptions());
+	let submittedCaptionsLength = $derived(submittedCaptions?.size ?? 0);
 	$effect.pre(() => {
-		if (round !== undefined && gameId !== undefined) {
-			fetchRoundImage({ user, gameId }).then((memeImage) => {
-				setRoundImage(memeImage);
+		if (userSubmission !== undefined && !submittedCaptions?.has(userSubmission.caption)) {
+			getCaptionCard({ captionId: userSubmission.caption }).then((caption) => {
+				addSubmittedCaption(caption);
 			});
 		}
 	});
 
-	let submissions = $derived(getSubmissions());
-	$effect.pre(() => {
-		if (gameId && round !== undefined) {
-			return createSubmissionsListener({ gameId, gameRound: round });
+	$effect(() => {
+		if (status === 'voting' && submissionsLength !== submittedCaptionsLength) {
+			const getCaptionCardPromises = submissions
+				?.filter((submission) => !submittedCaptions?.has(submission.caption))
+				?.map((submission) => {
+					return getCaptionCard({ captionId: submission.caption });
+				});
+
+			if (!getCaptionCardPromises) return;
+
+			Promise.all(getCaptionCardPromises).then((captions) => {
+				captions.forEach((caption) => {
+					addSubmittedCaption(caption);
+				});
+			});
 		}
 	});
-
-	// it's be cool to add that one day user can spectate and so they see what everyone has.
 </script>
 
 <!--judges only see this the entire round-->
 <!--also the whole card is not fectched since we don't want to leak the card.-->
-<div>
+<div class="flex grow flex-col items-center gap-3 py-3">
 	<div>
-		<!--todo I can use enhanced here I believe-->
-		<img src={image?.url} alt="the meme" />
+		<span
+			class={clsx(isJudge ? 'bg-red-300 font-extrabold' : 'bg-amber-300', 'rounded-lg px-2 py-1')}
+		>
+			{isJudge ? 'Judge' : 'Jury'}
+		</span>
+		<span>
+			Points Remaining
+			<!--This will be calculated by the submissions the user has voted for.-->
+		</span>
 	</div>
-	<div>Points Remaining: #### <span class="if judge red if player green">Role</span></div>
-	<div class="flex grow gap-3 overflow-y-auto">
+	<div class="lg:max-w-1/3 flex w-full flex-col gap-3 overflow-y-auto">
 		<!--for each submission,then show the caption submitted.-->
 		{#each submissions ?? [] as submission, i (i)}
-			<Button
+			<button
+				class="flex w-full flex-col gap-2 rounded-lg bg-blue-200 p-2"
 				onclick={async () => {
 					if (gameId && user) {
 						await submitVote({ gameId, user, points: 100, captionId: submission.caption });
 					}
 				}}
-				>{submission.points.reduce((all, curr) => {
-					return all + curr.amount;
-				}, 0)}</Button
 			>
+				<div
+					class={clsx('w-full text-left', !submittedCaptions?.has(submission.caption) && 'blur-md')}
+				>
+					{submittedCaptions?.get(submission.caption)?.text ?? submission.caption}
+				</div>
+				<div class="flex w-full justify-center">
+					<span class="w-full max-w-[10em] rounded-lg bg-purple-300 px-2 py-1 text-center">
+						{submission.points.reduce((all, curr) => {
+							return all + curr.amount;
+						}, 0)}
+					</span>
+				</div>
+			</button>
 		{/each}
 	</div>
 </div>
