@@ -12,6 +12,7 @@ export type Game = {
 	pausedLengths?: number[];
 	round: number;
 	status: 'waiting' | 'deciding' | 'voting' | 'paused' | 'ended';
+	participantUserIds: string[]; // used for quick lookup
 	participants: Participant[];
 };
 

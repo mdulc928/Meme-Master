@@ -77,7 +77,9 @@
 	<div
 		class="flex max-w-[25em] grow flex-col items-center gap-4 [@media_(min-height:800px)]:gap-10"
 	>
-		<div class="relative flex h-0 max-h-80 grow flex-col overflow-clip rounded-lg bg-purple-800">
+		<div
+			class="relative mt-3 flex h-0 max-h-80 grow flex-col overflow-clip rounded-lg bg-purple-800"
+		>
 			<enhanced:img src="/static/logo.png" alt="the Meme Master logo" class="drop-shadow-lg" />
 			<div
 				class="font-cursive absolute bottom-0 flex w-full items-center justify-center py-3 text-5xl font-bold italic text-amber-300 [text-shadow:0px_0px_10px_black]"

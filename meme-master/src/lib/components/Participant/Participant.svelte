@@ -23,7 +23,7 @@
 		clsx(customClasses)
 	)}
 >
-	<span class="h-1/2 font-serif text-2xl">{participant.points}</span>
+	<span class="h-1/2 font-serif text-2xl points">{participant.points}</span>
 	<span class="flex max-w-full items-center justify-center font-semibold"
 		>{participant.nickname.toUpperCase()}</span
 	>

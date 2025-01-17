@@ -9,9 +9,12 @@
 	import { goto } from '$app/navigation';
 	import { onMount } from 'svelte';
 	import clsx from 'clsx';
+	import { twMerge } from 'tailwind-merge';
 
 	let user = $derived(getUser());
 	let game: Game | undefined = $derived(getGame());
+	let sortedParticipants = $derived(game?.participants?.toSorted((a, b) => b.points - a.points));
+
 	let gameId = $derived(game?.uid);
 	let gameCode = $derived(game?.code);
 	let remainingSpots = $derived(9 - (game?.participants.length ?? 0));
@@ -25,7 +28,10 @@
 
 	$effect(() => {
 		if (gameId && gameCode) {
-			if (gameStatus !== 'waiting') {
+			if (
+				['deciding', 'voting'].includes(gameStatus ?? '') &&
+				game?.participants.some((p) => p.user === user?.uid)
+			) {
 				goto(`/game/play?gameId=${gameId}&gameCode=${gameCode}`);
 			}
 		}
@@ -34,6 +40,16 @@
 		let authedUser = user;
 		if (!authedUser && auth) {
 			authedUser = await signIn(auth);
+		}
+
+		if (
+			game?.participants.some((p) => p.user === user?.uid) &&
+			['deciding', 'voting'].includes(gameStatus ?? '')
+		) {
+			goto(`/game/play?gameId=${gameId}&gameCode=${gameCode}`);
+		} else if (!game?.participants.some((p) => p.user === user?.uid)) {
+			// this should never happen
+			return;
 		}
 
 		if (!gameId || !((gameId?.length ?? 0) > 0)) {
@@ -59,11 +75,16 @@
 			class="grid max-h-[20em] grow grid-flow-row grid-cols-3 grid-rows-3 gap-2 overflow-auto lg:gap-4"
 		>
 			<!--Participants-->
-			{#if game?.participants}
-				{#each game?.participants as participant, i (i)}
+			{#if game?.participants || sortedParticipants}
+				{#each (gameStatus === 'ended' ? sortedParticipants : game?.participants) ?? [] as participant, i (i)}
 					<Participant
 						{participant}
-						class={clsx(participant.user === user?.uid && 'bg-red-100 p-2 drop-shadow-lg')}
+						class={clsx(
+							participant.user === user?.uid && 'bg-red-100 p-2 drop-shadow-lg',
+							gameStatus === 'ended' &&
+								participant.points === sortedParticipants?.[0].points &&
+								'bg-purple-300 [&_.points]:h-fit [&_.points]:rounded [&_.points]:bg-yellow-300 [&_.points]:px-2 [&_.points]:py-1  [&_.points]:font-bold'
+						)}
 					/>
 				{/each}
 			{/if}
@@ -82,18 +103,23 @@
 					{/each}
 				</div>
 			</div>
-			<Button
-				class="self-end"
-				onclick={() => {
-					startGame();
-				}}
-			>
-				{#if game?.status !== 'waiting'}
-					View Game
-				{:else}
-					Start Game
+			{#if game?.participants.some((p) => p.user === user?.uid) && gameStatus !== 'ended'}
+				{#if gameStatus === 'waiting' && game?.createdBy !== user?.uid}
+					<div class="text-wrap">
+						Waiting for {game?.participants.find((p) => p.user === game?.createdBy)?.nickname ??
+							' the game creator '} to start the game. 😒
+					</div>
+				{:else if gameStatus === 'waiting' && game?.createdBy === user?.uid}
+					<Button
+						class="self-end"
+						onclick={() => {
+							startGame();
+						}}
+					>
+						Start Game
+					</Button>
 				{/if}
-			</Button>
+			{/if}
 		</div>
 	</div>
 </div>

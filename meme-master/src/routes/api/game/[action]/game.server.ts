@@ -77,6 +77,7 @@ export async function createNewGame({ userId, nickname }: { userId: string; nick
 		code: newGameCode,
 		createdBy: userId,
 		createdAt: new Date(),
+		participantUserIds: [userId],
 		participants: [
 			{
 				user: userId,
@@ -138,9 +139,7 @@ export async function joinGame({
 	}
 
 	// Check if the user is already a participant
-	const isParticipant = gameData.participants.some(
-		(participant: Participant) => participant.user === userId
-	);
+	const isParticipant = gameData.participantUserIds.some((participant) => participant === userId);
 	if (isParticipant) {
 		return { gameId: gameDoc.id };
 	}
@@ -156,10 +155,12 @@ export async function joinGame({
 	};
 
 	gameData.participants.push(newParticipant);
+	gameData.participantUserIds.push(userId);
 
 	// Update Firestore with the new participant
 	await gameDoc.ref.update({
-		participants: gameData.participants
+		participants: gameData.participants,
+		participantUserIds: gameData.participantUserIds
 	});
 
 	return { gameId: gameDoc.id };
@@ -196,13 +197,11 @@ export async function startGame({ userId, gameId }: { userId: string; gameId: st
 
 	// Check if the user is the creator
 	if (gameData.createdBy !== userId) {
-		// throw new Error('User is not the creator of this game.');
-		return { success: true };
+		throw new Error('User is not the creator of this game.');
 	}
 
 	if (gameData.status !== 'waiting') {
-		//	throw new Error('Game is not in the waiting state.');
-		return { success: true };
+		throw new Error('Game is not in the waiting state.');
 	}
 
 	// Set initial game settings

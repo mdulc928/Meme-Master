@@ -271,3 +271,37 @@ export async function getCaptionCard({ captionId }: { captionId: string }) {
 	const caption = captionDoc.data() as MemeCaption;
 	return caption;
 }
+
+let userTotalPoints: number | undefined = $state();
+export function getUserTotalPoints() {
+	return userTotalPoints;
+}
+export function setUserTotalPoints(points: number) {
+	userTotalPoints = points;
+}
+export function createUserTotalPointsListener({ user }: { user: User }) {
+	if (!db) {
+		throw new Error('Firestore is not initialized.');
+	}
+	console.log('Creating user total points listener for user', user);
+	// Create a reference to the collection and set up the query
+	const gameCollectionRef = collection(db, GAME_COLLECTION);
+	const userQuery = query(
+		gameCollectionRef,
+		where('participantUserIds', 'array-contains', user.uid)
+	);
+
+	// Set up the listener
+	const unsubscribe = onSnapshot(userQuery, (snapshot) => {
+		let totalPoints = 0;
+		snapshot.docs.forEach((doc) => {
+			const game = doc.data() as Game;
+			totalPoints += game.participants.find((p) => p.user === user.uid)?.points ?? 0;
+		});
+
+		setUserTotalPoints(totalPoints);
+	});
+
+	// Return the unsubscribe function to allow stopping the listener
+	return unsubscribe;
+}

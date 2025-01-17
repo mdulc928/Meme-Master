@@ -69,6 +69,7 @@
 			return createSubmissionsListener({ gameId, gameRound: round });
 		}
 	});
+	let hideCardWonLabel = $state(true);
 </script>
 
 {#if user}
@@ -78,11 +79,20 @@
 		<div
 			class="relative flex h-full w-full flex-col items-center justify-center overflow-auto px-3 py-5"
 		>
-			<div
-				class="text absolute right-4 top-0 rounded-lg bg-green-300 bg-opacity-50 p-2 px-3 font-extrabold lg:right-1/4"
+			<button
+				class="text absolute left-4 top-0 rounded-lg bg-green-400 bg-opacity-50 px-3 font-extrabold lg:left-1/4"
+				onclick={() => {
+					hideCardWonLabel = !hideCardWonLabel;
+					setTimeout(() => {
+						hideCardWonLabel = true;
+					}, 5000);
+				}}
 			>
+				{#if !hideCardWonLabel}
+					<span class="text-normal font-normal">Cards Won:</span>
+				{/if}
 				{gamePlayer?.cardsWon?.length}
-			</div>
+			</button>
 			<div class="max-h-1/3 max-w-[30em] overflow-hidden rounded-lg">
 				<img src={image?.url} alt="the meme" />
 			</div>

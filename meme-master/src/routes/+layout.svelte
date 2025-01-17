@@ -4,6 +4,8 @@
 	import { onDestroy, onMount } from 'svelte';
 	import { clsx } from 'clsx';
 	import { browser } from '$app/environment';
+	import { createUserTotalPointsListener, getUserTotalPoints } from './game/game.client.svelte';
+	import { getUser } from '$lib/utils/auth.client.svelte';
 
 	let { children } = $props();
 	let myTrack: { audio?: HTMLAudioElement } = $state({});
@@ -25,9 +27,22 @@
 		myTrack?.audio?.pause();
 	});
 
+	let user = $derived(getUser());
+	let userTotalPoints = $derived(getUserTotalPoints());
+
+	$effect(() => {
+		if (user) {
+			return createUserTotalPointsListener({ user });
+		}
+	});
+
 	// in the future we could probably save this in local storage
 	let showHelp = $state(false);
 </script>
+
+{#snippet comingSoon()}
+	<span class="text-sm text-gray-500">(Coming soon...)</span>
+{/snippet}
 
 {#snippet helpContent()}
 	<div
@@ -40,8 +55,10 @@
 			<div class="pt-2">
 				<ol class="list-inside list-decimal space-y-1 pb-4 leading-normal">
 					<li>Players get 10 cards to start.</li>
-					<li>A Judge picks a meme card for everyone to answer.</li>
-					<li>Players submit funny responses (or create their own if they want).</li>
+					<li>{@render comingSoon()}A Judge picks a meme card for everyone to answer.</li>
+					<li>
+						{@render comingSoon()} Players submit funny responses (or create their own if they want).
+					</li>
 					<li>The Judge picks the funniest response and gives the meme card to the winner.</li>
 					<li>
 						Everyone votes for the funniest answer and can give bonus points to their favorites.
@@ -67,7 +84,8 @@
 				<p class="leading-snug">
 					The goal of Meme Master is to be the funniest player and win meme cards. The first player
 					to collect 8 meme cards
-					<strong>(or have the most points when time runs out)</strong> becomes the Meme Master!
+					<strong>(or {@render comingSoon()} have the most points when time runs out)</strong> becomes
+					the Meme Master!
 				</p>
 			</div>
 		</div>
@@ -227,14 +245,16 @@
 	</div>
 {/snippet}
 
-<div class="grid min-h-lvh grid-cols-1 grid-rows-1 overflow-auto">
+<div class="grid min-h-lvh grid-cols-1 grid-rows-1">
 	<div
-		class="relative col-start-1 col-end-1 row-start-1 row-end-1 flex min-h-lvh w-full grow flex-col overflow-auto text-[16pt] leading-relaxed"
+		class="relative col-start-1 col-end-1 row-start-1 row-end-1 flex min-h-lvh w-full grow flex-col text-[16pt] leading-relaxed"
 	>
 		<div
 			class="sticky top-0 flex h-14 w-full gap-2 bg-white bg-opacity-50 p-2 px-3 backdrop-blur lg:justify-around"
 		>
-			<div class="flex w-full max-w-[36em] items-center gap-2 [&_button]:px-1 lg:[&_button]:px-3">
+			<div
+				class="relative flex w-full max-w-[36em] items-center gap-2 [&_button]:px-1 lg:[&_button]:px-3"
+			>
 				<button
 					class="flex items-center gap-2"
 					onclick={() => {
@@ -261,6 +281,19 @@
 					><i class={clsx(shouldPlay && 'fas fa-volume-high', !shouldPlay && 'fas fa-volume-xmark')}
 					></i>Sound
 				</button>
+				<div class="flex-grow"></div>
+				<a href="/" class="flex items-center gap-2">
+					<i class="fas fa-house"></i>Home
+				</a>
+				{#if user && userTotalPoints !== undefined && userTotalPoints !== null}
+					<!--show the user's points here.-->
+					<div
+						class="absolute -right-1 top-[90%] rounded-full bg-yellow-300 bg-opacity-50 px-3 font-extrabold text-black lg:static lg:bg-opacity-100 lg:p-2"
+					>
+						<i class="fas fa-crown"></i>
+						{userTotalPoints}
+					</div>
+				{/if}
 			</div>
 		</div>
 		{#if showHelp}
