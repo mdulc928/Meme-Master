@@ -18,6 +18,9 @@
 
 	let user = $derived(getUser());
 	let game = $derived(getGame());
+	let gamePlayer = $derived(
+		game?.participants?.find((participant) => participant.user === user?.uid)
+	);
 	let round = $derived(game?.round);
 	let gameId = $derived(game?.uid);
 	let view = $derived(game?.status);
@@ -56,6 +59,7 @@
 
 	// this is rotating index. We allow them to keep pressing 1 button,
 	// and when we reach the end of list of cards we just mod that.
+
 	let currentCaptionIndex: number = $state(0);
 	$effect.pre(() => {
 		if (
@@ -71,15 +75,24 @@
 	{#if view === 'ended'}
 		<EndGameView />
 	{:else}
-		<div class="flex grow flex-col items-center px-3 py-5">
+		<div
+			class="relative flex h-full w-full flex-col items-center justify-center overflow-auto px-3 py-5"
+		>
+			<div
+				class="text absolute right-4 top-0 rounded-lg bg-green-300 bg-opacity-50 p-2 px-3 font-extrabold lg:right-1/4"
+			>
+				{gamePlayer?.cardsWon?.length}
+			</div>
 			<div class="max-h-1/3 max-w-[30em] overflow-hidden rounded-lg">
 				<img src={image?.url} alt="the meme" />
 			</div>
-			{#if view === 'deciding' && !isJudge && userSubmission === undefined}
-				<DecidingView {user} bind:currentIndex={currentCaptionIndex} />
-			{:else if view === 'voting' || isJudge || userSubmission !== undefined}
-				<VotingView {user} />
-			{/if}
+			<div class="max-h-2/3 flex w-full max-w-[30em] grow flex-col items-center overflow-auto">
+				{#if view === 'deciding' && !isJudge && userSubmission === undefined}
+					<DecidingView {user} bind:currentIndex={currentCaptionIndex} />
+				{:else if view === 'voting' || isJudge || userSubmission !== undefined}
+					<VotingView {user} />
+				{/if}
+			</div>
 		</div>
 	{/if}
 {:else}

@@ -8,6 +8,12 @@ import type { Participant } from '$lib/components/Participant/Participant.svelte
 import type { Game, Submission } from '$lib/Game.svelte.js';
 import { db } from '$lib/server/firebase'; // Firestore instance
 import { GAME_COLLECTION, SUBMISSION_COLLECTION } from '$lib/utils/collections';
+import {
+	JUGDE_POINTS,
+	MAX_PLAYER_POINTS,
+	MIN_PLAYER_POINTS,
+	PLAYER_POINTS
+} from '../../../game/utils';
 
 type User = {
 	uid: string;
@@ -689,8 +695,10 @@ export async function submitVote({
 	// Check voting eligibility and points
 	const maxPoints =
 		participant.role === 'judge'
-			? 2000 * gameData.participants.length // todo adjust this.
-			: Math.min(3000, 500 * (gameData.participants.length - 1));
+			? JUGDE_POINTS * gameData.participants.length // todo adjust this.
+			: Math.min(MAX_PLAYER_POINTS, MIN_PLAYER_POINTS * (gameData.participants.length - 2));
+
+	console.log(maxPoints);
 
 	if (points % 100 !== 0 || points > maxPoints || points <= 0) {
 		throw new Error('Invalid points allocation.');
@@ -729,9 +737,14 @@ export async function submitVote({
 	// Check if the user has enough points to vote
 	const allUsersVotesPoints = allRoundSubmissions.reduce((acc, s) => {
 		// todo this is a bit of a mess.
-		const userPoints = s.points.find((p) => p.user === userId);
+		const userPoints = s.points.reduce((all, curr) => {
+			if (curr.user === userId) {
+				return all + curr.amount;
+			}
+			return all;
+		}, 0);
 		if (userPoints) {
-			acc += userPoints.amount;
+			acc += userPoints;
 		}
 		return acc;
 	}, 0);
@@ -768,8 +781,11 @@ export async function submitVote({
 	}
 
 	if (participant.role === 'judge') {
+		// update judge roles
 		participant.role = 'player';
 		gameData.participants[participantIndex] = participant;
+		const nextJudgeIndex = (participantIndex + 1) % gameData.participants.length;
+		gameData.participants[nextJudgeIndex].role = 'judge';
 
 		// get all the submissions for this round
 		const pointsPerParticiant: [string, number][] = tallyPoints(allRoundSubmissions);
@@ -785,7 +801,9 @@ export async function submitVote({
 			imagesStack = await getCardStack(gameId, 'images');
 			const image = imagesStack.cards[imagesStack.cardsIndex];
 			winnerParticipant.cardsWon.push({
+				wonAssetType: 'image',
 				wonAsset: image,
+				winningAssetType: 'caption',
 				winningAsset: votedCaption.caption,
 				round: gameData.round
 			});

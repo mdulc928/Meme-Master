@@ -39,7 +39,7 @@
 			<hr />
 			<div class="pt-2">
 				<ol class="list-inside list-decimal space-y-1 pb-4 leading-normal">
-					<li>Players get 8 cards to start.</li>
+					<li>Players get 10 cards to start.</li>
 					<li>A Judge picks a meme card for everyone to answer.</li>
 					<li>Players submit funny responses (or create their own if they want).</li>
 					<li>The Judge picks the funniest response and gives the meme card to the winner.</li>
@@ -106,7 +106,7 @@
 					<li>
 						<span class="font-bold">Round Setup</span><br />
 						<span class="mt-1 block pl-4">
-							Each player starts with 8 meme cards. These cards have funny words or phrases on them
+							Each player starts with 10 meme cards. These cards have funny words or phrases on them
 							(like “Unicorn in space!” or “When you get ice cream at 3 AM”).<br />
 							The Judge picks a meme card (a funny prompt) to share with everyone.
 						</span>
@@ -211,7 +211,7 @@
 			<h2 class="mb-2 mt-6 text-2xl font-semibold">Final Recap</h2>
 			<div class="pl-2">
 				<ul class="list-inside list-disc space-y-1 pl-4 leading-normal">
-					<li>Start with 8 cards.</li>
+					<li>Start with 10 cards.</li>
 					<li>Judge picks a meme card to fill in.</li>
 					<li>Players pick a card (or create their own) to respond.</li>
 					<li>Judge picks the funniest, that player wins a meme card.</li>
@@ -227,9 +227,9 @@
 	</div>
 {/snippet}
 
-<div class="grid min-h-lvh grid-cols-1 grid-rows-1">
+<div class="grid min-h-lvh grid-cols-1 grid-rows-1 overflow-auto">
 	<div
-		class="relative col-start-1 col-end-1 row-start-1 row-end-1 flex min-h-lvh flex-col text-[16pt] leading-relaxed"
+		class="relative col-start-1 col-end-1 row-start-1 row-end-1 flex min-h-lvh w-full grow flex-col overflow-auto text-[16pt] leading-relaxed"
 	>
 		<div
 			class="sticky top-0 flex h-14 w-full gap-2 bg-white bg-opacity-50 p-2 px-3 backdrop-blur lg:justify-around"

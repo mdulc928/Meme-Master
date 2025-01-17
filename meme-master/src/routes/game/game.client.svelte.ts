@@ -9,6 +9,7 @@ import {
 } from '$lib/components/Caption/Assets.svelte';
 import { fetchWithAuth } from '$lib/utils/auth.client.svelte';
 import type { User } from '@firebase/auth';
+import { SvelteMap } from 'svelte/reactivity';
 
 let game: Game | undefined = $state();
 export function getGame() {
@@ -26,15 +27,15 @@ export function setUserCurrentCards(updates: MemeCaption[]) {
 	userCards = updates;
 }
 
-let submittedCaptions: Map<string, MemeCaption> | undefined = $state();
+let submittedCaptions: SvelteMap<string, MemeCaption> | undefined = $state();
 export function getSubmittedCaptions() {
 	return submittedCaptions;
 }
-export function setSubmittedCaptions(updates: Map<string, MemeCaption> | undefined) {
+export function setSubmittedCaptions(updates: SvelteMap<string, MemeCaption> | undefined) {
 	submittedCaptions = updates;
 }
 export function addSubmittedCaption(update: MemeCaption) {
-	const cards = getSubmittedCaptions() ?? new Map();
+	const cards = getSubmittedCaptions() ?? new SvelteMap();
 	cards.set(update.uid, update);
 	// todo this might be uncessary; I don't know yet.
 	setSubmittedCaptions(cards);
