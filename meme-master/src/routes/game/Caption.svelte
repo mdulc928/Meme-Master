@@ -3,6 +3,7 @@
 	import clsx from 'clsx';
 	import { twMerge } from 'tailwind-merge';
 	import { getNewCard } from './game.client.svelte';
+	
 
 	let {
 		class: customClass,

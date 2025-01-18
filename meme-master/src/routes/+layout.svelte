@@ -248,10 +248,10 @@
 	</main>
 	<!--Navbar-->
 	<navbar
-		class="col-start-1 col-end-1 row-start-1 row-end-1 flex h-14 w-full gap-2 bg-white bg-opacity-50 p-2 px-3 backdrop-blur lg:justify-around"
+		class="col-start-1 col-end-1 row-start-1 row-end-1 flex h-14 w-full justify-center gap-2 bg-white bg-opacity-50 p-2 backdrop-blur lg:justify-around"
 	>
 		<div
-			class="relative flex w-full max-w-[36em] items-center gap-2 [&_button]:px-1 lg:[&_button]:px-3"
+			class="relative flex w-full max-w-[36em] items-center justify-center gap-2 [&_button]:px-1 lg:[&_button]:px-3"
 		>
 			<button
 				class="flex items-center gap-2"
@@ -276,7 +276,8 @@
 				><i
 					class={clsx(
 						mainTrackIsPlaying && 'fas fa-volume-high',
-						!mainTrackIsPlaying && 'fas fa-volume-xmark'
+						!mainTrackIsPlaying && 'fas fa-volume-xmark',
+						'w-4'
 					)}
 				></i>Sound
 			</button>
@@ -287,7 +288,7 @@
 			{#if user && userTotalPoints !== undefined && userTotalPoints !== null}
 				<!--show the user's points here.-->
 				<div
-					class="absolute -right-1 top-[90%] rounded-full bg-yellow-300 bg-opacity-50 px-3 font-extrabold text-black lg:static lg:bg-opacity-100 lg:p-2"
+					class="absolute -right-1 top-[90%] rounded-full bg-yellow-300 px-3 font-extrabold text-black md:static lg:static lg:p-2"
 				>
 					<i class="fas fa-crown"></i>
 					{userTotalPoints}
