@@ -1,31 +1,22 @@
 <script lang="ts">
 	import '../app.css';
-	import mainTrack from '$lib/assets/main.mp3';
 	import { onDestroy, onMount } from 'svelte';
 	import { clsx } from 'clsx';
 	import { browser } from '$app/environment';
 	import { createUserTotalPointsListener, getUserTotalPoints } from './game/game.client.svelte';
 	import { getUser } from '$lib/utils/auth.client.svelte';
+	import {
+		getIsMainTrackPlaying,
+		pauseMainTrack,
+		playMainTrack,
+		setupMainTrack
+	} from './audio.svelte';
 
 	let { children } = $props();
-	let myTrack: { audio?: HTMLAudioElement } = $state({});
-	const soundOnKey = 'sound-on';
-	let shouldPlay = $state(browser ? JSON.parse(localStorage.getItem(soundOnKey) ?? 'true') : false);
 
-	onMount(() => {
-		const newAudio = new Audio(mainTrack);
-		newAudio.loop = true;
-		newAudio.volume = 0.1;
-		if (shouldPlay) {
-			newAudio.play();
-		}
-
-		myTrack = { audio: newAudio };
-	});
-
-	onDestroy(() => {
-		myTrack?.audio?.pause();
-	});
+	let mainTrackIsPlaying = $derived(getIsMainTrackPlaying());
+	// Sets up audio
+	setupMainTrack();
 
 	let user = $derived(getUser());
 	let userTotalPoints = $derived(getUserTotalPoints());
@@ -246,60 +237,62 @@
 {/snippet}
 
 <div class="grid min-h-lvh grid-cols-1 grid-rows-1">
-	<div
-		class="relative col-start-1 col-end-1 row-start-1 row-end-1 flex min-h-lvh w-full grow flex-col text-[16pt] leading-relaxed"
+	<main
+		class="relative col-start-1 col-end-1 row-start-1 row-end-1 flex min-h-lvh w-full grow flex-col pt-14 text-[16pt] leading-relaxed"
 	>
-		<div
-			class="sticky top-0 flex h-14 w-full gap-2 bg-white bg-opacity-50 p-2 px-3 backdrop-blur lg:justify-around"
-		>
-			<div
-				class="relative flex w-full max-w-[36em] items-center gap-2 [&_button]:px-1 lg:[&_button]:px-3"
-			>
-				<button
-					class="flex items-center gap-2"
-					onclick={() => {
-						showHelp = !showHelp;
-					}}
-					>{#if showHelp}
-						<i class="fas fa-xmark"></i>Close
-					{:else}
-						<i class="far fa-circle-question"></i>Help
-					{/if}
-				</button>
-				<button
-					class="flex items-center gap-2"
-					onclick={() => {
-						shouldPlay = !shouldPlay;
-						if (myTrack?.audio?.paused) {
-							myTrack?.audio?.play();
-							localStorage.setItem(soundOnKey, 'true');
-						} else {
-							myTrack?.audio?.pause();
-							localStorage.setItem(soundOnKey, 'false');
-						}
-					}}
-					><i class={clsx(shouldPlay && 'fas fa-volume-high', !shouldPlay && 'fas fa-volume-xmark')}
-					></i>Sound
-				</button>
-				<div class="flex-grow"></div>
-				<a href="/" class="flex items-center gap-2">
-					<i class="fas fa-house"></i>Home
-				</a>
-				{#if user && userTotalPoints !== undefined && userTotalPoints !== null}
-					<!--show the user's points here.-->
-					<div
-						class="absolute -right-1 top-[90%] rounded-full bg-yellow-300 bg-opacity-50 px-3 font-extrabold text-black lg:static lg:bg-opacity-100 lg:p-2"
-					>
-						<i class="fas fa-crown"></i>
-						{userTotalPoints}
-					</div>
-				{/if}
-			</div>
-		</div>
 		{#if showHelp}
 			{@render helpContent()}
 		{:else}
 			{@render children()}
 		{/if}
-	</div>
+	</main>
+	<!--Navbar-->
+	<navbar
+		class="col-start-1 col-end-1 row-start-1 row-end-1 flex h-14 w-full gap-2 bg-white bg-opacity-50 p-2 px-3 backdrop-blur lg:justify-around"
+	>
+		<div
+			class="relative flex w-full max-w-[36em] items-center gap-2 [&_button]:px-1 lg:[&_button]:px-3"
+		>
+			<button
+				class="flex items-center gap-2"
+				onclick={() => {
+					showHelp = !showHelp;
+				}}
+				>{#if showHelp}
+					<i class="fas fa-xmark"></i>Close
+				{:else}
+					<i class="far fa-circle-question"></i>Help
+				{/if}
+			</button>
+			<button
+				class="flex items-center gap-2"
+				onclick={() => {
+					if (mainTrackIsPlaying) {
+						pauseMainTrack();
+					} else {
+						playMainTrack();
+					}
+				}}
+				><i
+					class={clsx(
+						mainTrackIsPlaying && 'fas fa-volume-high',
+						!mainTrackIsPlaying && 'fas fa-volume-xmark'
+					)}
+				></i>Sound
+			</button>
+			<div class="flex-grow"></div>
+			<a href="/" class="flex items-center gap-2">
+				<i class="fas fa-house"></i>Home
+			</a>
+			{#if user && userTotalPoints !== undefined && userTotalPoints !== null}
+				<!--show the user's points here.-->
+				<div
+					class="absolute -right-1 top-[90%] rounded-full bg-yellow-300 bg-opacity-50 px-3 font-extrabold text-black lg:static lg:bg-opacity-100 lg:p-2"
+				>
+					<i class="fas fa-crown"></i>
+					{userTotalPoints}
+				</div>
+			{/if}
+		</div>
+	</navbar>
 </div>
