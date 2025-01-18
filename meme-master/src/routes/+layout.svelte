@@ -1,9 +1,11 @@
 <script lang="ts">
 	import '../app.css';
-	import { onDestroy, onMount } from 'svelte';
 	import { clsx } from 'clsx';
-	import { browser } from '$app/environment';
-	import { createUserTotalPointsListener, getUserTotalPoints } from './game/game.client.svelte';
+	import {
+		createUserTotalPointsListener,
+		getGame,
+		getUserTotalPoints
+	} from './game/game.client.svelte';
 	import { getUser } from '$lib/utils/auth.client.svelte';
 	import {
 		getIsMainTrackPlaying,
@@ -26,6 +28,12 @@
 			return createUserTotalPointsListener({ user });
 		}
 	});
+
+	let game = $derived(getGame());
+	let judge = $derived.by(() => {
+		return game?.participants?.find((participant) => participant.role === 'judge');
+	});
+	let round = $derived(game?.round);
 
 	// in the future we could probably save this in local storage
 	let showHelp = $state(false);
@@ -251,7 +259,7 @@
 		class="col-start-1 col-end-1 row-start-1 row-end-1 flex h-14 w-full justify-center gap-2 bg-white bg-opacity-50 p-2 backdrop-blur lg:justify-around"
 	>
 		<div
-			class="relative flex w-full max-w-[36em] items-center justify-center gap-2 [&_button]:px-1 lg:[&_button]:px-3"
+			class="relative flex w-full max-w-[36em] items-center justify-center gap-2 md:max-w-[40em] lg:max-w-[40em] [&_button]:px-1 lg:[&_button]:px-3"
 		>
 			<button
 				class="flex items-center gap-2"
@@ -282,16 +290,28 @@
 				></i>Sound
 			</button>
 			<div class="flex-grow"></div>
-			<a href="/" class="flex items-center gap-2">
+			<a href="/" class="flex items-center gap-2 px-2">
 				<i class="fas fa-house"></i>Home
 			</a>
 			{#if user && userTotalPoints !== undefined && userTotalPoints !== null}
 				<!--show the user's points here.-->
 				<div
-					class="absolute -right-1 top-[90%] rounded-full bg-yellow-300 px-3 font-extrabold text-black md:static lg:static lg:p-2"
+					class="absolute right-0 top-[90%] rounded-full bg-yellow-300 px-3 font-extrabold text-black md:static lg:static lg:p-2"
 				>
 					<i class="fas fa-crown"></i>
 					{userTotalPoints}
+				</div>
+			{/if}
+
+			{#if judge && user?.uid !== judge.user}
+				<div
+					class="absolute left-0 top-[90%] flex
+				items-center gap-2 rounded-lg bg-red-300 px-2"
+				>
+					<span class="font-bold">Judge:</span>
+					<span class="h-fit rounded bg-white px-1 font-semibold leading-5"
+						>{judge.nickname.toUpperCase()}</span
+					>
 				</div>
 			{/if}
 		</div>
