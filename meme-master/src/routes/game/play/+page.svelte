@@ -77,7 +77,6 @@
 			return createSubmissionsListener({ gameId, gameRound: round });
 		}
 	});
-	let hideCardWonLabel = $state(true);
 
 	let selectedCaption = $state<Submission | undefined>();
 </script>
@@ -88,21 +87,17 @@
 	{:else}
 		<div class="flex h-full w-full flex-col items-center justify-center px-3 py-5">
 			<div class="max-h-1/3 relative max-w-[30em]">
-				<img src={image?.url} alt="the meme" class="overflow-hidden rounded-lg" />
-				<button
-					class="text absolute bottom-0 left-0 rounded-lg bg-green-400 bg-opacity-70 px-3 font-extrabold"
-					onclick={() => {
-						hideCardWonLabel = !hideCardWonLabel;
-						setTimeout(() => {
-							hideCardWonLabel = true;
-						}, 5000);
-					}}
+				<img src={image?.url} alt="the meme" class="overflow-hidden rounded-t-lg rounded-bl-lg" />
+				<div
+					class="text absolute bottom-0 right-0 rounded-b-lg bg-lime-500 bg-opacity-30 px-3 font-extrabold"
 				>
-					{#if !hideCardWonLabel}
-						<span class="text-normal font-normal">Cards Won:</span>
-					{/if}
+					<span class="text-xs font-normal">Image Cards Won:</span>
 					{gamePlayer?.cardsWon?.length}
-				</button>
+				</div>
+				<div>
+					<span class="text-xs font-normal">Round:</span>
+					{round}
+				</div>
 			</div>
 			<div class={clsx('flex w-full max-w-[30em] grow flex-col items-center')}>
 				{#if gameStatus === 'deciding' && !isJudge && userSubmission === undefined}
@@ -119,17 +114,19 @@
 							<!--judges only see this the entire round-->
 							<!--also the whole card is not fectched since we don't want to leak the card.-->
 							<div class="relative flex w-full grow flex-col items-center gap-3 overflow-auto py-3">
-								<div class="flex w-full justify-center gap-3">
+								<div class="flex w-full items-end justify-center gap-3">
+									<span class="text-sm">Role</span>
 									<span
 										class={clsx(
 											isJudge ? 'bg-red-300' : 'bg-amber-300',
-											'rounded-full px-2 font-semibold'
+											'rounded-lg px-2 font-semibold'
 										)}
 									>
 										{isJudge ? 'Judge' : 'Jury'}
 									</span>
-									<div>
-										Points Used: {pointsUsed}/{totalPoints}
+									<div class="flex items-end gap-1">
+										<span class="text-sm">Points Used:</span>
+										<span class="font-semibold">{pointsUsed}/{totalPoints}</span>
 										<!--This will be calculated by the submissions the user has voted for.-->
 									</div>
 								</div>
