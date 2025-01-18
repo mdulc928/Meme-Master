@@ -114,19 +114,23 @@
 							<!--judges only see this the entire round-->
 							<!--also the whole card is not fectched since we don't want to leak the card.-->
 							<div class="relative flex w-full grow flex-col items-center gap-3 overflow-auto py-3">
-								<div class="flex w-full items-end justify-center gap-3">
-									<span class="text-sm">Role</span>
-									<span
-										class={clsx(
-											isJudge ? 'bg-red-300' : 'bg-amber-300',
-											'rounded-lg px-2 font-semibold'
-										)}
-									>
-										{isJudge ? 'Judge' : 'Jury'}
-									</span>
-									<div class="flex items-end gap-1">
-										<span class="text-sm">Points Used:</span>
-										<span class="font-semibold">{pointsUsed}/{totalPoints}</span>
+								<div class="flex w-full justify-center gap-7">
+									<div class="flex items-end gap-2">
+										<span class="text-sm">Role</span>
+										<span
+											class={clsx(
+												isJudge ? 'bg-red-300' : 'bg-amber-300',
+												'rounded-lg px-2 font-semibold'
+											)}
+										>
+											{isJudge ? 'Judge' : 'Jury'}
+										</span>
+									</div>
+									<div class="flex items-end gap-2">
+										<span class="text-sm">Points Used</span>
+										<span class="font-semibold underline underline-offset-4"
+											>{pointsUsed}/{totalPoints}</span
+										>
 										<!--This will be calculated by the submissions the user has voted for.-->
 									</div>
 								</div>
