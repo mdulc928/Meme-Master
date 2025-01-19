@@ -33,7 +33,6 @@
 	let judge = $derived.by(() => {
 		return game?.participants?.find((participant) => participant.role === 'judge');
 	});
-	let round = $derived(game?.round);
 
 	// in the future we could probably save this in local storage
 	let showHelp = $state(false);
@@ -289,7 +288,15 @@
 					)}
 				></i>Sound
 			</button>
-			<div class="flex-grow"></div>
+			<div class="flex-grow text-right">
+				{#if game?.code}
+					{#each game.code.split('') as c, i (i)}
+						<span class="mx-1 h-fit w-fit bg-blue-200 font-semibold underline underline-offset-4"
+							>{c}</span
+						>
+					{/each}
+				{/if}
+			</div>
 			<a href="/" class="flex items-center gap-2 px-2">
 				<i class="fas fa-house"></i>Home
 			</a>

@@ -5,12 +5,19 @@
 	import Input from './Input.svelte';
 	import { goto } from '$app/navigation';
 	import clsx from 'clsx';
+	import { playMainTrack, soundHasntPlayed } from './audio.svelte';
+	import { onMount } from 'svelte';
+	import { clearGameState } from './game/game.client.svelte';
 
 	let gameId: number | undefined = $state();
 	let nickname: string = $state('');
 	let gameCode: [string, string, string, string] = $state(['', '', '', '']);
 
 	let user = $derived(getUser());
+
+	onMount(() => {
+		clearGameState();
+	});
 
 	async function createGame() {
 		let authedUser = user;
@@ -35,6 +42,9 @@
 		gameId = body.gameId;
 		const newGameCode = body.gameCode;
 
+		if (soundHasntPlayed()) {
+			playMainTrack();
+		}
 		// goto the game lobby if game code available. where you can see who's joined.
 		goto(`/game/lobby?gameId=${gameId}&gameCode=${newGameCode}`);
 	}
@@ -49,7 +59,6 @@
 			window.alert('Please make sure to input a nickname and game code.');
 			return;
 		}
-		console.log('gameCode', gameCode);
 		const response = await fetchWithAuth(authedUser, '/api/game/join', {
 			method: 'POST',
 			body: JSON.stringify({
@@ -63,6 +72,9 @@
 			gameId = body.gameId;
 			if (gameId !== undefined) {
 				// goto the game lobby if game code available. where you can see who's joined.
+				if (soundHasntPlayed()) {
+					playMainTrack();
+				}
 				goto(`/game/lobby?gameId=${gameId}&gameCode=${gameCode?.join('')}`);
 			}
 		}

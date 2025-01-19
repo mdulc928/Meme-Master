@@ -10,6 +10,10 @@ export function getIsMainTrackPlaying() {
 	return isSoundOn && myTrack?.audio?.played;
 }
 
+export function soundHasntPlayed() {
+	return localStorage.getItem(soundOnKey) === null;
+}
+
 export function playMainTrack() {
 	myTrack?.audio?.play();
 	localStorage.setItem(soundOnKey, 'true');

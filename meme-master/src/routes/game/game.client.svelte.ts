@@ -15,15 +15,24 @@ let game: Game | undefined = $state();
 export function getGame() {
 	return game;
 }
-export function setGame(updates: Game) {
+export function setGame(updates: Game | undefined) {
 	game = updates;
+}
+
+export function clearGameState() {
+	setGame(undefined);
+	setUserCurrentCards(undefined);
+	setSubmittedCaptions(undefined);
+	setRoundImage(undefined);
+	setUserSubmission(undefined);
+	setNewCard(undefined);
 }
 
 let userCards: MemeCaption[] | undefined = $state();
 export function getUserCurrentCards() {
 	return userCards;
 }
-export function setUserCurrentCards(updates: MemeCaption[]) {
+export function setUserCurrentCards(updates: MemeCaption[] | undefined) {
 	userCards = updates;
 }
 
@@ -45,7 +54,7 @@ let roundImage: MemeImage | undefined = $state();
 export function getRoundImage() {
 	return roundImage;
 }
-export function setRoundImage(update: MemeImage) {
+export function setRoundImage(update: MemeImage | undefined) {
 	roundImage = update;
 }
 
@@ -276,7 +285,7 @@ let userTotalPoints: number | undefined = $state();
 export function getUserTotalPoints() {
 	return userTotalPoints;
 }
-export function setUserTotalPoints(points: number) {
+export function setUserTotalPoints(points: number | undefined) {
 	userTotalPoints = points;
 }
 export function createUserTotalPointsListener({ user }: { user: User }) {

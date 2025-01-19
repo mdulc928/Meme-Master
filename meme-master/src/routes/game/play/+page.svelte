@@ -96,7 +96,7 @@
 				</div>
 				<div>
 					<span class="text-xs font-normal">Round:</span>
-					{round}
+					{round ?? '-'}
 				</div>
 			</div>
 			<div class={clsx('flex w-full max-w-[30em] grow flex-col items-center')}>
