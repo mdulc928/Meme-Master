@@ -329,6 +329,8 @@ async function generateCaptionCards(
 	participants: Participant[]
 ): Promise<CardStack<'captions'>> {
 	const totalCaptionCards = 40 * numParticipants;
+	// this is one place to optimize since I am always getting all the captions,
+	// which are in the thousands YIKES!
 	const captionSnapshot = await db.collection(CAPTION_COLLECTION).get();
 
 	if (captionSnapshot.empty || captionSnapshot.size < totalCaptionCards) {

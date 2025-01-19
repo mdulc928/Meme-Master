@@ -13,6 +13,7 @@
 		playMainTrack,
 		setupMainTrack
 	} from './audio.svelte';
+	import { twMerge } from 'tailwind-merge';
 
 	let { children } = $props();
 
@@ -245,7 +246,7 @@
 
 <div class="grid min-h-lvh grid-cols-1 grid-rows-1">
 	<main
-		class="relative col-start-1 col-end-1 row-start-1 row-end-1 flex min-h-lvh w-full grow flex-col pt-14 text-[16pt] leading-relaxed"
+		class="relative col-start-1 col-end-1 row-start-1 row-end-1 flex min-h-lvh w-full grow flex-col overflow-auto pt-14 text-[16pt] leading-relaxed"
 	>
 		{#if showHelp}
 			{@render helpContent()}
@@ -303,7 +304,12 @@
 			{#if user && userTotalPoints !== undefined && userTotalPoints !== null}
 				<!--show the user's points here.-->
 				<div
-					class="absolute right-0 top-[90%] rounded-full bg-yellow-300 px-3 font-extrabold text-black md:static lg:static lg:p-2"
+					class={twMerge(
+						clsx(
+							'absolute right-0 top-[90%] rounded-full bg-yellow-300 px-3 font-extrabold text-black md:static lg:static lg:p-2',
+							showHelp && 'hidden md:visible lg:visible'
+						)
+					)}
 				>
 					<i class="fas fa-crown"></i>
 					{userTotalPoints}
@@ -312,8 +318,12 @@
 
 			{#if judge && user?.uid !== judge.user}
 				<div
-					class="absolute left-0 top-[90%] flex
-				items-center gap-2 rounded-lg bg-red-300 px-2"
+					class={twMerge(
+						clsx(
+							'absolute left-0 top-[90%] flex items-center gap-2 rounded-lg bg-red-300 px-2',
+							showHelp && 'hidden'
+						)
+					)}
 				>
 					<span class="font-bold">Judge:</span>
 					<span class="h-fit rounded bg-white px-1 font-semibold leading-5"

@@ -15,6 +15,8 @@
 	} from '../game.client.svelte';
 	import Caption from '../Caption.svelte';
 	import { onMount } from 'svelte';
+	import { fade, fly } from 'svelte/transition';
+	import { browser } from '$app/environment';
 
 	let { user, currentIndex = $bindable() }: { user: User; currentIndex: number } = $props();
 	let game = $derived(getGame());
@@ -34,6 +36,40 @@
 			}, 5000);
 		}
 	});
+
+	const showInstructionsDecidingKey = 'show-instructions-deciding';
+	const instructionsIndexDecidingKey = 'instructions-index-deciding';
+	let showInstructionsDeciding = $state<boolean>(
+		browser ? JSON.parse(localStorage.getItem(showInstructionsDecidingKey) ?? 'true') : false
+	);
+	let instructionsIndex = $state<number>(
+		browser ? parseInt(localStorage.getItem(instructionsIndexDecidingKey) ?? '0') : 0
+	);
+
+	const instructions: string[] = [
+		'All the other players see this image.',
+		'Only you see these 10 caption cards (👆👀).',
+		'Submit a caption you think the judge will like.',
+		'Flip through your cards using the arrows.',
+		"Replace a card if you don't like it.",
+		'You can only submit a caption once.'
+	];
+	$effect(() => {
+		if (!showInstructionsDeciding && !statusMessage) {
+			return;
+		}
+
+		const instructionInterval = setInterval(() => {
+			if (showInstructionsDeciding && !statusMessage) {
+				instructionsIndex = (instructionsIndex + 1) % instructions.length;
+				localStorage.setItem(instructionsIndexDecidingKey, instructionsIndex.toString());
+			}
+		}, 6000);
+
+		return () => {
+			clearInterval(instructionInterval);
+		};
+	});
 </script>
 
 <div class="flex grow flex-col items-center">
@@ -45,8 +81,33 @@
 	<div class="flex h-10 w-full items-center justify-center text-center text-sm text-gray-700">
 		{statusMessage}
 	</div>
-	<div class="flex flex-row items-center gap-2">
+	<div class="relative flex flex-row items-center gap-2">
+		{#if showInstructionsDeciding && !statusMessage}
+			{#key instructionsIndex}
+				<div
+					in:fly={{ x: -10, duration: 2000, delay: 1000 }}
+					out:fade={{ duration: 500, delay: 0 }}
+					class="absolute top-0 flex w-full -translate-y-full justify-between rounded-full border px-2 text-center shadow-lg drop-shadow-lg"
+				>
+					<div>
+						<i class="fas fa-lightbulb my-2 text-yellow-500 drop-shadow-md"></i>
+						<span class="text-md text-pretty font-light">{instructions[instructionsIndex]}</span>
+					</div>
+					<!-- svelte-ignore a11y_consider_explicit_label -->
+					<button
+						onclick={() => {
+							instructionsIndex = (instructionsIndex + 1) % instructions.length;
+							localStorage.setItem(instructionsIndexDecidingKey, instructionsIndex.toString());
+							showInstructionsDeciding = false;
+							localStorage.setItem(showInstructionsDecidingKey, 'false');
+						}}><i class="fas fa-xmark"></i></button
+					>
+				</div>
+			{/key}
+		{/if}
+
 		<div class="flex flex-row items-center gap-2 py-3">
+			<!--Previous card button-->
 			<Button
 				class="bg-black text-white"
 				onclick={() => {
@@ -60,6 +121,7 @@
 					}
 				}}><i class="fas fa-angle-left"></i></Button
 			>
+			<!--Next card button-->
 			<Button
 				class="bg-black text-white"
 				onclick={() => {
@@ -69,6 +131,7 @@
 					}
 				}}><i class="fas fa-angle-right"></i></Button
 			>
+			<!--Discard Button-->
 			<Button
 				class="bg-red-500"
 				onclick={() => {
@@ -117,7 +180,7 @@
 							});
 					} else {
 						discarding = true;
-						const message = 'Press "Discard" again.';
+						const message = 'Press "Replace" again.';
 						statusMessage = message;
 						setTimeout(() => {
 							// this would mean that we haven't discarded.
@@ -129,10 +192,11 @@
 					}
 				}}
 			>
-				<i class="fas fa-trash pr-2"></i>Discard</Button
+				<i class="fas fa-retweet pr-2"></i>Replace</Button
 			>
 		</div>
 		<div>
+			<!--Submit button-->
 			<Button
 				class="disabled:cursor-not-allowed disabled:bg-opacity-50 disabled:text-gray-500"
 				onclick={async () => {
