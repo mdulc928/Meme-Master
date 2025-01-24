@@ -242,6 +242,33 @@
 				</ul>
 			</div>
 		</div>
+		<div>
+			<h1 class="mt-6 py-2 pb-3 text-3xl font-bold">Credits</h1>
+			<hr class="mb-4" />
+			<span class="font-bold">Sound Track:</span>{' '}<a
+				href="https://www.freesound.org"
+				target="_blank"
+				class="underline">FreeSound</a
+			>
+			<br />
+			<span class="font-bold">Captions:</span> AI 😁
+			<br />
+			<span class="font-bold">Images:</span>
+			<a href="https://www.youtube.com/watch?v=omV5m5ZXkLg" target="_blank" class="underline"
+				>Youtube Screenshots</a
+			>,
+			<a href="https://pexels.com" target="_blank" class="underline">Pexels</a>
+			<br />
+			<br />
+			Please let me contact me on
+			<a
+				href="https://www.linkedin.com/in/melchi-dulcio/"
+				target="_blank"
+				class="font-bold text-blue-400 underline">my LinkedIn</a
+			> for any questions or concerns. I do not mean any disrespect to any of the brands or people mentioned
+			in this game. This is a fun game to play with friends and family. I also do not mean to infringe
+			on any copyrights, so please let me know if there is an issue.
+		</div>
 	</div>
 {/snippet}
 
