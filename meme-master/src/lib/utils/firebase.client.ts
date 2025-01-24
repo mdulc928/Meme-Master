@@ -28,6 +28,19 @@ const app = browser ? initializeApp(firebaseConfig) : undefined;
 const analytics = browser && app ? getAnalytics(app) : undefined;
 const db = browser && app ? initializeFirestore(app, {}) : undefined;
 const auth = browser && app ? getAuth(app) : undefined;
+/* if (auth && dev) {
+	connectAuthEmulator(
+		auth,
+		`http://${PUBLIC_FIREBASE_EMULATORS_HOST}:${PUBLIC_FIREBASE_FIRESTORE_EMULATOR_PORT}`
+	);
+} */
 const storage = browser && app ? getStorage(app) : undefined;
+/* if (storage && dev) {
+	connectStorageEmulator(
+		storage,
+		PUBLIC_FIREBASE_EMULATORS_HOST,
+		parseInt(PUBLIC_FIREBASE_STORAGE_EMULATOR_PORT)
+	);
+} */
 
 export { app, analytics, db, auth, storage };

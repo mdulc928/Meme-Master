@@ -2,7 +2,7 @@
 	import type { MemeCaption } from '$lib/components/Caption/Assets.svelte';
 	import clsx from 'clsx';
 	import { twMerge } from 'tailwind-merge';
-	import { getNewCard } from './game.client.svelte';
+	import { getNewCard } from '../../lib/game.client.svelte';
 	
 
 	let {

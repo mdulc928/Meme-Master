@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { getUser, signIn } from '$lib/utils/auth.client.svelte';
 	import { onMount } from 'svelte';
-	import { createGameStateListener } from './game.client.svelte';
+	import { createGameStateListener } from '../../lib/game.client.svelte';
 	import { auth } from '$lib/utils/firebase.client';
 	import { browser } from '$app/environment';
 

@@ -6,10 +6,10 @@
 		getGame,
 		getSubmittedCaptions,
 		getUserSubmission
-	} from '../game.client.svelte';
-	import { getSubmissions } from '../submissions.client.svelte';
+	} from '$lib/game.client.svelte';
+	import { getSubmissions } from '$lib/submissions.client.svelte';
 	import type { Submission } from '$lib/Game.svelte';
-	import { JUGDE_POINTS, MAX_PLAYER_POINTS, MIN_PLAYER_POINTS } from '../utils';
+	import { JUGDE_POINTS, MAX_PLAYER_POINTS, MIN_PLAYER_POINTS } from '$lib/utils';
 	import type { Snippet } from 'svelte';
 	import type { SvelteMap } from 'svelte/reactivity';
 	import type { MemeCaption } from '$lib/components/Caption/Assets.svelte';

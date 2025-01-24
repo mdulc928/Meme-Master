@@ -5,22 +5,27 @@
 		fetchUserCards,
 		fetchUserSubmission,
 		getGame,
+		getLastRoundWinner,
 		getRoundImage,
 		getUserSubmission,
+		setLastRoundWinner,
 		setRoundImage,
 		setUserCurrentCards,
 		setUserSubmission,
+		startVotingRound,
 		submitVote
-	} from '../game.client.svelte';
+	} from '$lib/game.client.svelte';
 	import DecidingView from './DecidingView.svelte';
 	import VotingView from './VotingView.svelte';
 	import EndGameView from './EndGameView.svelte';
-	import { createSubmissionsListener } from '../submissions.client.svelte';
+	import { createSubmissionsListener } from '$lib/submissions.client.svelte';
 	import clsx from 'clsx';
 	import type { Submission } from '$lib/Game.svelte';
 	import { twMerge } from 'tailwind-merge';
-	import { JUGDE_POINTS, PLAYER_POINTS } from '../utils';
+	import { JUGDE_POINTS, PLAYER_POINTS } from '$lib/utils';
 	import Button from '../../Button.svelte';
+	import { flip } from 'svelte/animate';
+	import { fly } from 'svelte/transition';
 
 	let user = $derived(getUser());
 	let game = $derived(getGame());
@@ -79,12 +84,52 @@
 	});
 
 	let selectedCaption = $state<Submission | undefined>();
+
+	let notifyingRoundWinner = $state<number | undefined>();
+	let lastRoundWinner = $derived(getLastRoundWinner());
+
+	$effect.pre(() => {
+		if (gameStatus === 'deciding' && lastRoundWinner !== undefined) {
+			notifyingRoundWinner = window.setTimeout(() => {
+				notifyingRoundWinner = undefined;
+				setLastRoundWinner(undefined);
+			}, 10000);
+		}
+		return () => {
+			window.clearTimeout(notifyingRoundWinner);
+		};
+	});
 </script>
+
+{#snippet winnerBanner()}
+	{#if lastRoundWinner !== undefined && round}
+		{#key notifyingRoundWinner}
+			<!-- svelte-ignore a11y_consider_explicit_label -->
+			<div
+				transition:fly
+				class={clsx(
+					'absolute left-0 right-0 top-8 z-[1000] flex max-w-[400px] justify-between gap-5 rounded-md bg-green-700 p-3 text-2xl font-bold text-white shadow-md drop-shadow-lg',
+					notifyingRoundWinner !== undefined && 'animate-pulse'
+				)}
+			>
+				<span>{lastRoundWinner}</span> won round {round - 1}!
+				<button
+					onclick={() => {
+						window.clearTimeout(notifyingRoundWinner);
+						setLastRoundWinner(undefined);
+						notifyingRoundWinner = undefined;
+					}}><i class="fas fa-xmark"></i></button
+				>
+			</div>
+		{/key}
+	{/if}
+{/snippet}
 
 {#if user}
 	{#if gameStatus === 'ended'}
 		<EndGameView />
 	{:else}
+		{@render winnerBanner()}
 		<div class="flex h-full w-full flex-col items-center justify-center px-3 py-5">
 			<div class="max-h-1/3 relative max-w-[30em]">
 				<img src={image?.url} alt="the meme" class="overflow-hidden rounded-t-lg rounded-bl-lg" />
@@ -97,6 +142,9 @@
 				<div>
 					<span class="text-xs font-normal">Round:</span>
 					{round ?? '-'}
+					{#if gameStatus === 'voting'}
+						<span class="text-xs">You may need to scroll</span>
+					{/if}
 				</div>
 			</div>
 			<div class={clsx('flex w-full max-w-[30em] grow flex-col items-center')}>
@@ -186,6 +234,9 @@
 								</div>
 								<div class="flex w-full justify-center gap-3 bg-white px-3 py-3">
 									{#if isJudge && gameStatus === 'voting'}
+										<div class="flex items-center gap-2 text-wrap break-words">
+											Choose the winner by clicking on the caption and then clicking this button.
+										</div>
 										<Button
 											class="bg-amber-300"
 											onclick={async () => {
@@ -206,8 +257,24 @@
 											}}>Choose Winner</Button
 										>
 									{:else if gameStatus === 'voting'}
-										<div>Award points by clicking on the caption: 1 click = {PLAYER_POINTS}pts</div>
+										<div class="text-wrap">
+											Award points by clicking on the caption: 1 click = {PLAYER_POINTS}pts. You can
+											give as many points to you have to 1 card.
+										</div>
 									{:else}
+										{#if isJudge}
+											<Button
+												class="h-fit py-2"
+												onclick={() => {
+													if (gameId && user) {
+														startVotingRound({
+															gameId,
+															user
+														});
+													}
+												}}>Start Voting Round</Button
+											>
+										{/if}
 										<div>Waiting for everyone to submit a caption.</div>
 									{/if}
 								</div>

@@ -1,3 +1,4 @@
+import { PUBLIC_NUMBER_OF_CARDS_TO_WIN } from '$env/static/public';
 import {
 	CAPTION_COLLECTION,
 	IMAGE_COLLECTION,
@@ -13,7 +14,7 @@ import {
 	MAX_PLAYER_POINTS,
 	MIN_PLAYER_POINTS,
 	PLAYER_POINTS
-} from '../../../game/utils';
+} from '../../../../lib/utils';
 
 type User = {
 	uid: string;
@@ -331,7 +332,10 @@ async function generateCaptionCards(
 	const totalCaptionCards = 40 * numParticipants;
 	// this is one place to optimize since I am always getting all the captions,
 	// which are in the thousands YIKES!
-	const captionSnapshot = await db.collection(CAPTION_COLLECTION).get();
+	const captionSnapshot = await db
+		.collection(CAPTION_COLLECTION)
+		.where('categories', 'array-contains', 'launch')
+		.get();
 
 	if (captionSnapshot.empty || captionSnapshot.size < totalCaptionCards) {
 		throw new Error('Not enough caption cards available.');
@@ -823,7 +827,7 @@ export async function submitVote({
 		gameData.status = 'deciding';
 		gameData.statusStartedAt = new Date();
 
-		if (winnerParticipant.cardsWon.length >= 8) {
+		if (winnerParticipant.cardsWon.length >= parseInt(PUBLIC_NUMBER_OF_CARDS_TO_WIN)) {
 			gameData.status = 'ended';
 			gameData.endedAt = new Date();
 		}

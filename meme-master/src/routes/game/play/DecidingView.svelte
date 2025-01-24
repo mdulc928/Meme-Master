@@ -12,7 +12,7 @@
 		getUserSubmission,
 		getNewCard,
 		addSubmittedCaption
-	} from '../game.client.svelte';
+	} from '$lib/game.client.svelte';
 	import Caption from '../Caption.svelte';
 	import { onMount } from 'svelte';
 	import { fade, fly } from 'svelte/transition';

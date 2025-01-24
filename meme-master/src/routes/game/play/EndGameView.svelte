@@ -2,7 +2,7 @@
 	import { goto } from '$app/navigation';
 	import { getUser } from '$lib/utils/auth.client.svelte';
 	import Button from '../../Button.svelte';
-	import { getGame } from '../game.client.svelte';
+	import { getGame } from '../../../lib/game.client.svelte';
 
 	let user = $derived(getUser());
 	let game = $derived(getGame());

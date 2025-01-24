@@ -2,7 +2,7 @@
 	import type { Game } from '$lib/Game.svelte.js';
 	import { fetchWithAuth, getUser, signIn } from '$lib/utils/auth.client.svelte';
 	import { auth } from '$lib/utils/firebase.client';
-	import { getGame } from '../game.client.svelte';
+	import { getGame } from '../../../lib/game.client.svelte';
 	import Button from '../../Button.svelte';
 	import Participant from '$lib/components/Participant/Participant.svelte';
 
@@ -103,21 +103,29 @@
 					{/each}
 				</div>
 			</div>
-			{#if game?.participants.some((p) => p.user === user?.uid) && gameStatus !== 'ended'}
-				{#if gameStatus === 'waiting' && game?.createdBy !== user?.uid}
-					<div class="text-wrap">
-						Waiting for {game?.participants.find((p) => p.user === game?.createdBy)?.nickname ??
-							' the game creator '} to start the game. 😒
-					</div>
-				{:else if gameStatus === 'waiting' && game?.createdBy === user?.uid}
-					<Button
-						class="self-end"
-						onclick={() => {
-							startGame();
-						}}
-					>
-						Start Game
-					</Button>
+			{#if game}
+				{#if game.participants.some((p) => p.user === user?.uid) && gameStatus !== 'ended'}
+					{#if game.participants.length < 3}
+						<div class="text-wrap">
+							Waiting for {3 - game.participants.length} more {3 - game.participants.length > 1
+								? 'players'
+								: 'player'} to join...
+						</div>
+					{:else if gameStatus === 'waiting' && game.participants.length >= 3 && game.createdBy !== user?.uid}
+						<div class="text-wrap">
+							Waiting for {game.participants.find((p) => p.user === game.createdBy)?.nickname ??
+								' the game creator '} to start the game. 😒
+						</div>
+					{:else if gameStatus === 'waiting' && game.createdBy === user?.uid}
+						<Button
+							class="self-end"
+							onclick={() => {
+								startGame();
+							}}
+						>
+							Start Game
+						</Button>
+					{/if}
 				{/if}
 			{/if}
 		</div>

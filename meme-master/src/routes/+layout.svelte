@@ -5,7 +5,7 @@
 		createUserTotalPointsListener,
 		getGame,
 		getUserTotalPoints
-	} from './game/game.client.svelte';
+	} from '$lib/game.client.svelte';
 	import { getUser } from '$lib/utils/auth.client.svelte';
 	import {
 		getIsMainTrackPlaying,
@@ -14,6 +14,7 @@
 		setupMainTrack
 	} from './audio.svelte';
 	import { twMerge } from 'tailwind-merge';
+	import { PUBLIC_NUMBER_OF_CARDS_TO_WIN } from '$env/static/public';
 
 	let { children } = $props();
 
@@ -64,7 +65,7 @@
 					</li>
 					<!-- Updated bullet to mention time running out condition -->
 					<li>
-						The first player to collect 8 meme cards
+						The first player to collect {PUBLIC_NUMBER_OF_CARDS_TO_WIN} meme cards
 						<strong>(or have the most points when time runs out)</strong> becomes the Meme Master!
 					</li>
 				</ol>
@@ -82,7 +83,7 @@
 			<div class="py-1 pl-2">
 				<p class="leading-snug">
 					The goal of Meme Master is to be the funniest player and win meme cards. The first player
-					to collect 8 meme cards
+					to collect {PUBLIC_NUMBER_OF_CARDS_TO_WIN} meme cards
 					<strong>(or {@render comingSoon()} have the most points when time runs out)</strong> becomes
 					the Meme Master!
 				</p>
@@ -183,7 +184,7 @@
 			<div class="pl-2">
 				<p class="leading-snug">
 					The game keeps going with new rounds, and each time someone wins a round, they get a new
-					meme card. The first player to collect 8 meme cards
+					meme card. The first player to collect {PUBLIC_NUMBER_OF_CARDS_TO_WIN} meme cards
 					<strong>(or have the most points when time runs out)</strong>
 					wins and is crowned the Meme Master!
 				</p>
@@ -235,8 +236,8 @@
 					<li>Everyone votes for the funniest answer and gives bonus points.</li>
 					<!-- Updated recap to include time-based condition -->
 					<li>
-						Collect 8 meme cards or finish with the highest points when the timer runs out to become
-						the Meme Master!
+						Collect {PUBLIC_NUMBER_OF_CARDS_TO_WIN} meme cards or finish with the highest points when
+						the timer runs out to become the Meme Master!
 					</li>
 				</ul>
 			</div>

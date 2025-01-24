@@ -7,7 +7,7 @@
 	import clsx from 'clsx';
 	import { playMainTrack, soundHasntPlayed } from './audio.svelte';
 	import { onMount } from 'svelte';
-	import { clearGameState } from './game/game.client.svelte';
+	import { clearGameState } from '../lib/game.client.svelte';
 
 	let gameId: number | undefined = $state();
 	let nickname: string = $state('');
@@ -85,13 +85,11 @@
 	let fourthChar: Input;
 </script>
 
-<div class="flex h-full grow flex-col items-center px-5 pb-16 pt-4">
+<div class="flex h-full grow flex-col items-center overflow-auto px-5 pb-16 pt-4">
 	<div
 		class="flex max-w-[25em] grow flex-col items-center gap-4 [@media_(min-height:800px)]:gap-10"
 	>
-		<div
-			class="relative mt-3 flex h-0 max-h-80 grow flex-col overflow-clip rounded-lg bg-purple-800"
-		>
+		<div class="relative mt-3 flex max-h-56 grow flex-col overflow-clip rounded-lg bg-purple-800">
 			<enhanced:img src="/static/logo.png" alt="the Meme Master logo" class="drop-shadow-lg" />
 			<div
 				class="font-cursive absolute bottom-0 flex w-full items-center justify-center py-3 text-5xl font-bold italic text-amber-300 [text-shadow:0px_0px_10px_black]"
@@ -207,5 +205,29 @@
 				joinGame();
 			}}>Join Game</Button
 		>
+	</div>
+	<div
+		class="text-light flex max-w-[40em] flex-col items-center gap-4 text-balance py-10 text-center font-serif"
+	>
+		<h1 class="text-2xl font-bold">A Worthy Cause</h1>
+		<p class="">
+			Maysiah is a 3 lbs. 10 oz. baby girl born just a couple days ago to a young single mother with
+			the father having passed away tragically. Please as you enjoy this game, consider donating to
+			help this family starting out.
+			<br />
+			<a
+				href="https://donate.stripe.com/6oEeVXfdjgIY6LC3cf"
+				target="_blank"
+				class="my-3 rounded-lg bg-pink-400 p-2 text-center font-bold text-white">Donate here</a
+			>
+		</p>
+		<p>
+			Please reach out to me here (<a
+				href="https://www.linkedin.com/in/melchi-dulcio/"
+				target="_blank"
+				class="inline underline underline-offset-4">including my Linkedin for reassurance</a
+			>) if you have any follow up questions. Also, if you're interested, consider leaving your
+			email for updates on this family.
+		</p>
 	</div>
 </div>

@@ -1,5 +1,14 @@
 import { GAME_COLLECTION } from '$lib/utils/collections';
-import { collection, doc, limit, onSnapshot, query, where, getDoc } from '@firebase/firestore';
+import {
+	collection,
+	doc,
+	limit,
+	onSnapshot,
+	query,
+	where,
+	getDoc,
+	Timestamp
+} from '@firebase/firestore';
 import { db } from '$lib/utils/firebase.client';
 import type { Game } from '$lib/Game.svelte.js';
 import {
@@ -10,6 +19,7 @@ import {
 import { fetchWithAuth } from '$lib/utils/auth.client.svelte';
 import type { User } from '@firebase/auth';
 import { SvelteMap } from 'svelte/reactivity';
+import { browser } from '$app/environment';
 
 let game: Game | undefined = $state();
 export function getGame() {
@@ -58,6 +68,42 @@ export function setRoundImage(update: MemeImage | undefined) {
 	roundImage = update;
 }
 
+let lastRoundWinner: string | undefined = $state(
+	browser ? (localStorage.getItem('last-round-winner') ?? undefined) : undefined
+);
+export function getLastRoundWinner() {
+	return lastRoundWinner;
+}
+export function setLastRoundWinner(update: string | undefined) {
+	lastRoundWinner = update;
+	if (update) {
+		localStorage.setItem('last-round-winner', update);
+	} else {
+		localStorage.removeItem('last-round-winner');
+	}
+}
+
+let hasNotifiedRoundWinner = $state(
+	browser ? (localStorage.getItem('has-notified-round-winner') ?? false) : false
+);
+export function getHasNotifiedRoundWinner() {
+	return hasNotifiedRoundWinner;
+}
+export function setHasNotifiedRoundWinner(update: boolean) {
+	hasNotifiedRoundWinner = update;
+	if (update) {
+		localStorage.setItem('has-notified-round-winner', JSON.stringify(update));
+	}
+}
+
+const findLastRoundWinner = (game: Game, round: number) => {
+	for (const participant of game.participants) {
+		if (participant.cardsWon.some((card) => card.round === round)) {
+			return participant.nickname;
+		}
+	}
+};
+
 export function createGameStateListener({ gameId }: { gameId: string }) {
 	if (!db) {
 		throw new Error('Firestore is not initialized.');
@@ -70,12 +116,28 @@ export function createGameStateListener({ gameId }: { gameId: string }) {
 	// Set up the listener
 	const unsubscribe = onSnapshot(gameQuery, (snapshot) => {
 		const game = snapshot.docs[0]?.data() as Game | undefined;
-		const oldGame = getGame();
-		if (oldGame && game && oldGame.status === 'voting' && game.status === 'deciding') {
+
+		if (
+			game &&
+			game.status === 'deciding' &&
+			Date.now() - (game.startedAt as unknown as Timestamp).toDate().getTime() < 15_000_000 &&
+			game.round > 1 &&
+			(getUserSubmission() ||
+				(getSubmittedCaptions()?.size ?? 0) > 0 ||
+				!getHasNotifiedRoundWinner())
+		) {
 			setUserSubmission(undefined);
 			setSubmittedCaptions(undefined);
+			if (!getHasNotifiedRoundWinner()) {
+				setLastRoundWinner(findLastRoundWinner(game, game.round - 1));
+				setHasNotifiedRoundWinner(true);
+			}
 		}
+
 		if (game) {
+			if (game.status === 'voting') {
+				setHasNotifiedRoundWinner(false);
+			}
 			setGame(game);
 		}
 	});
@@ -234,6 +296,20 @@ export async function submitVote({
 	const data = await response.json();
 	// todo add zod validation
 	return data;
+}
+
+export async function startVotingRound({ gameId, user }: { gameId: string; user: User }) {
+	const response = await fetchWithAuth(user, `/api/game/startVoting`, {
+		method: 'POST',
+		headers: {
+			'Content-Type': 'application/json'
+		},
+		body: JSON.stringify({ gameId })
+	});
+
+	if (!response.ok) {
+		throw new Error('Failed to start voting round');
+	}
 }
 
 let newCard = $state<string | undefined>();
