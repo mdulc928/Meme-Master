@@ -99,7 +99,7 @@
 		</div>
 		<Input
 			bind:value={nickname}
-			placeholder="Enter a nickname..."
+			placeholder="Nickname..."
 			containerClass="bg-slate-100 focus-within:drop-shadow-lg lg:mt-5 [@media_(min-height:800px)]:mt-0"
 			class="text-2xl"
 		/>
@@ -111,6 +111,10 @@
 		>
 			Create Game
 		</Button>
+		<div class="flex flex-col items-center justify-center text-2xl">
+			or<span>Join another game with the code</span>
+			<span class="text-sm">(You will still need a nickname up there 👆)</span>
+		</div>
 		<div
 			class="flex flex-row gap-2 *:bg-blue-200 lg:mb-5 [&_input]:h-14 [&_input]:w-14 [&_input]:text-center [&_input]:text-2xl [&_input]:caret-transparent [@media_(min-height:800px)]:mb-0"
 		>
@@ -205,29 +209,5 @@
 				joinGame();
 			}}>Join Game</Button
 		>
-	</div>
-	<div
-		class="text-light flex max-w-[40em] flex-col items-center gap-4 text-balance py-10 text-center font-serif"
-	>
-		<h1 class="text-2xl font-bold">A Worthy Cause</h1>
-		<p class="">
-			Maysiah is a 3 lbs. 10 oz. baby girl born just a couple days ago to a young single mother with
-			the father having passed away tragically. Please as you enjoy this game, consider donating to
-			help this family starting out.
-			<br />
-			<a
-				href="https://donate.stripe.com/6oEeVXfdjgIY6LC3cf"
-				target="_blank"
-				class="my-3 rounded-lg bg-pink-400 p-2 text-center font-bold text-white">Donate here</a
-			>
-		</p>
-		<p>
-			Please reach out to me here (<a
-				href="https://www.linkedin.com/in/melchi-dulcio/"
-				target="_blank"
-				class="inline underline underline-offset-4">including my Linkedin for reassurance</a
-			>) if you have any follow up questions. Also, if you're interested, consider leaving your
-			email for updates on this family.
-		</p>
 	</div>
 </div>

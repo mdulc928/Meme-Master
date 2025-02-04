@@ -107,14 +107,16 @@
 				{#if game.participants.some((p) => p.user === user?.uid) && gameStatus !== 'ended'}
 					{#if game.participants.length < 3}
 						<div class="text-wrap">
-							Waiting for {3 - game.participants.length} more {3 - game.participants.length > 1
-								? 'players'
-								: 'player'} to join...
+							👈 Invite (at least 😁) {3 - game.participants.length} more {3 -
+								game.participants.length >
+							1
+								? 'peeps'
+								: 'peep'} to join with this game code to play! Have fun 🤗
 						</div>
 					{:else if gameStatus === 'waiting' && game.participants.length >= 3 && game.createdBy !== user?.uid}
 						<div class="text-wrap">
 							Waiting for {game.participants.find((p) => p.user === game.createdBy)?.nickname ??
-								' the game creator '} to start the game. 😒
+								' the game creator '} to start the game. 😒 (You can keep inviting more people)
 						</div>
 					{:else if gameStatus === 'waiting' && game.createdBy === user?.uid}
 						<Button
